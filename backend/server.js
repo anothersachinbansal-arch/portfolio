@@ -18,7 +18,6 @@ app.use(
     origin: [
       "https://thesachinbansal.in",
       "https://www.thesachinbansal.in",
-      "http://localhost:5173",
     ],
     methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allowedHeaders: ["Content-Type", "Authorization"],
