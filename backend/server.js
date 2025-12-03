@@ -80,7 +80,7 @@ Time: ${consultationTime}
     // Try to send email with timeout
     const emailPromise = transporter.sendMail({
       from: `"${name || 'Aptitude Test User'}" <anothersachinbansal@gmail.com>`,
-      to: "anothersachinbansal@gmail.com",
+      to: "kishan817835@gmail.com", // Send to different email
       subject: "New Aptitude Test Submission" + (consultationDate ? " & Consultation Booking" : ""),
       text: emailContent
     });
@@ -109,6 +109,24 @@ Time: ${consultationTime}
       message: "Data received successfully (email may be delayed)",
       warning: "Email service temporarily unavailable, but your data has been recorded"
     });
+  }
+});
+
+// Test email endpoint
+app.post("/test-email", async (req, res) => {
+  try {
+    const result = await transporter.sendMail({
+      from: `"Test" <anothersachinbansal@gmail.com>`,
+      to: "2sachinbansal@gmail.com",
+      subject: "Test Email",
+      text: "This is a test email to verify the service works"
+    });
+    
+    console.log('Test email sent successfully');
+    res.json({ success: true, message: "Test email sent" });
+  } catch (error) {
+    console.error('Test email failed:', error);
+    res.status(500).json({ success: false, message: "Test email failed", error: error.message });
   }
 });
 
