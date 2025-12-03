@@ -5,7 +5,7 @@ import { FaArrowLeft, FaArrowRight, FaCheck, FaTimes, FaGift, FaSpinner } from '
 import ScratchCard from './ScratchCard';
 
 // API base URL
-const API_URL = 'http://localhost:5000/api';
+const API_URL = 'https://portfolio-x0gj.onrender.com/api';
 
 // Default empty array since we'll be fetching from API
 const defaultQuestions = [];
