@@ -31,16 +31,19 @@ app.use(
 // Connect DB
 connectDB();
 const transporter = nodemailer.createTransport({
-  service: "gmail",
+  host: "smtp.gmail.com",
+  port: 587,
+  secure: false, // Use TLS
   auth: {
     user: process.env.EMAIL_USER || "anothersachinbansal@gmail.com",
-    pass: process.env.EMAIL_PASS || "ifah tgql vpup rqum" // App password, NOT regular password
+    pass: process.env.EMAIL_PASS || "ifah tgql vpup rqum"
   },
-  pool: true, // Use connection pooling
-  maxConnections: 1,
-  maxMessages: 100,
-  rateDelta: 1000,
-  rateLimit: 5
+  tls: {
+    rejectUnauthorized: false // Allow self-signed certificates
+  },
+  connectionTimeout: 5000,
+  greetingTimeout: 3000,
+  socketTimeout: 5000
 });
 
 // Routes
