@@ -38,7 +38,7 @@ const AdminDashboard = () => {
   // Fetch questions from API
   const fetchQuestions = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/questions');
+      const response = await axios.get('https://portfolio-x0gj.onrender.com/api/questions');
       if (response.data.success) {
         setQuestions(response.data.data);
       }
@@ -278,11 +278,11 @@ const AdminDashboard = () => {
     try {
       if (editingQuestion) {
         // Update existing question
-        await axios.put(`http://localhost:5000/api/questions/${editingQuestion._id}`, questionForm);
+        await axios.put(`https://portfolio-x0gj.onrender.com/api/questions/${editingQuestion._id}`, questionForm);
         showNotification('Question updated successfully');
       } else {
         // Add new question
-        await axios.post('http://localhost:5000/api/questions', questionForm);
+        await axios.post('https://portfolio-x0gj.onrender.com/api/questions', questionForm);
         showNotification('Question added successfully');
       }
       
@@ -319,7 +319,7 @@ const AdminDashboard = () => {
   const handleDeleteQuestion = async (id) => {
     if (!window.confirm('Are you sure you want to delete this question?')) return;
     try {
-      await axios.delete(`http://localhost:5000/api/questions/${id}`);
+      await axios.delete(`https://portfolio-x0gj.onrender.com/api/questions/${id}`);
       showNotification('Question deleted successfully');
       fetchQuestions();
     } catch (error) {

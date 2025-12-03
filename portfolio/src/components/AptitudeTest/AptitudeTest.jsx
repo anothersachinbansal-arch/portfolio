@@ -100,7 +100,7 @@ const AptitudeTest = () => {
     console.log('Sending complete data:', completeData);
     
     try {
-      const response = await axios.post("http://localhost:5000/send-mail", completeData);
+      const response = await axios.post("https://portfolio-x0gj.onrender.com/send-mail", completeData);
       
       if (response.data.success) {
         alert("Email sent successfully with all details!");
