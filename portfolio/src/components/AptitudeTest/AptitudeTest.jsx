@@ -1,59 +1,53 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import axios from "axios";
-import { useNavigate } from 'react-router-dom';
 import './AptitudeTest.css';
-import { FaArrowLeft, FaArrowRight, FaCheck, FaTimes, FaGift } from 'react-icons/fa';
+import { FaArrowLeft, FaArrowRight, FaCheck, FaTimes, FaGift, FaSpinner } from 'react-icons/fa';
 import ScratchCard from './ScratchCard';
 
-const questions = [
-  {
-    id: 1,
-    question: 'If a train travels at a speed of 60 km/h, how far will it travel in 2.5 hours?',
-    options: [
-      { id: 'a', text: '120 km' },
-      { id: 'b', text: '150 km' },
-      { id: 'c', text: '180 km' },
-      { id: 'd', text: '200 km' },
-    ],
-    correctAnswer: 'b'
-  },
-  {
-    id: 2,
-    question: 'What is 25% of 200?',
-    options: [
-      { id: 'a', text: '25' },
-      { id: 'b', text: '50' },
-      { id: 'c', text: '75' },
-      { id: 'd', text: '100' },
-    ],
-    correctAnswer: 'b'
-  },
-  {
-    id: 3,
-    question: 'If x + 5 = 10, what is the value of x?',
-    options: [
-      { id: 'a', text: '2' },
-      { id: 'b', text: '3' },
-      { id: 'c', text: '4' },
-      { id: 'd', text: '5' },
-    ],
-    correctAnswer: 'd'
-  }
-];
+// API base URL
+const API_URL = 'http://localhost:5000/api';
+
+// Default empty array since we'll be fetching from API
+const defaultQuestions = [];
 
 const AptitudeTest = () => {
-  const navigate = useNavigate();
+  const [questions, setQuestions] = useState(defaultQuestions);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
   const [showForm, setShowForm] = useState(false);
   const [showScratchCard, setShowScratchCard] = useState(false);
+  const [testData, setTestData] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
     className: ''
   });
-  const [testData, setTestData] = useState(null); // Store test data
+
+  // Fetch questions from API on component mount
+  useEffect(() => {
+    const fetchQuestions = async () => {
+      try {
+        const response = await axios.get(`${API_URL}/questions`);
+        if (response.data.success && response.data.data.length > 0) {
+          setQuestions(response.data.data);
+        } else {
+          setError('Hello students 👋, We will upload questions after sometime...');
+          setQuestions([]);
+        }
+      } catch (err) {
+        console.error('Error fetching questions:', err);
+        setError('Failed to load questions. Please try again later.');
+        setQuestions([]);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchQuestions();
+  }, []);
 
   const handleOptionChange = (questionId, optionId) => {
     setAnswers({
@@ -64,8 +58,8 @@ const AptitudeTest = () => {
 
   const calculateScore = () => {
     let score = 0;
-    questions.forEach((q) => {
-      if (answers[q.id] === q.correctAnswer) {
+    questions.forEach((q, index) => {
+      if (answers[q._id || index] === q.correctAnswer) {
         score++;
       }
     });
@@ -94,6 +88,8 @@ const AptitudeTest = () => {
   };
 
   const handleConsultationSubmit = async (consultationData) => {
+    if (!testData) return;
+    
     // Merge test data with consultation data
     const completeData = {
       ...testData,
@@ -104,12 +100,12 @@ const AptitudeTest = () => {
     console.log('Sending complete data:', completeData);
     
     try {
-      const response = await axios.post("https://portfolio-x0gj.onrender.com/send-mail", completeData);
+      const response = await axios.post("http://localhost:5000/send-mail", completeData);
       
       if (response.data.success) {
         alert("Email sent successfully with all details!");
-        // Navigate to /aptitude-test after successful submission
-        navigate('/aptitude-test');
+        // Redirect to /aptitude-test after successful submission
+        window.location.href = '/aptitude-test';
       } else {
         alert("Email sending failed.");
       }
@@ -139,10 +135,28 @@ const AptitudeTest = () => {
     }
   };
 
-  const score = calculateScore();
-  const percentage = Math.round((score / questions.length) * 100);
+  // Show loading state
+  if (loading) {
+    return (
+      <div className="loading-container">
+        <FaSpinner className="spinner" />
+        <p>Loading test...</p>
+      </div>
+    );
+  }
+
+  // Show error if no questions available
+  if (questions.length === 0) {
+    return (
+      <div className="error-container">
+        <h2>No questions available</h2>
+        {error && <p className="error-message">{error}</p>}
+      </div>
+    );
+  }
 
   if (showResults) {
+    const score = calculateScore();
     const correctPercentage = (score / questions.length) * 100;
     
     const barData = [
@@ -200,33 +214,6 @@ const AptitudeTest = () => {
             </div>
           )}
         </div>
-        
-        <div className="answers-review">
-          <h3>Review Answers</h3>
-          {questions.map((question, index) => {
-            const isCorrect = answers[question.id] === question.correctAnswer;
-            return (
-              <div key={index} className={`answer-item ${isCorrect ? 'correct' : 'incorrect'}`}>
-                <div className="question-text">
-                  <strong>Q{index + 1}.</strong> {question.question}
-                </div>
-                <div className="answer-details">
-                  <span>Your answer: {answers[question.id] || 'Not answered'}</span>
-                  {!isCorrect && (
-                    <span className="correct-answer">
-                      Correct answer: {question.correctAnswer}
-                    </span>
-                  )}
-                  {isCorrect ? (
-                    <FaCheck className="answer-icon correct" />
-                  ) : (
-                    <FaTimes className="answer-icon incorrect" />
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
     );
   }
@@ -250,13 +237,13 @@ const AptitudeTest = () => {
 
           <div className="options">
             {currentQ.options.map((option) => (
-              <label key={option.id} className={answers[currentQ.id] === option.id ? 'selected' : ''}>
+              <label key={option.id} className={answers[currentQ._id || currentQuestion] === option.id ? 'selected' : ''}>
                 <input
                   type="radio"
-                  name={`q${currentQ.id}`}
+                  name={`q${currentQ._id || currentQuestion}`}
                   value={option.id}
-                  checked={answers[currentQ.id] === option.id}
-                  onChange={() => handleOptionChange(currentQ.id, option.id)}
+                  checked={answers[currentQ._id || currentQuestion] === option.id}
+                  onChange={() => handleOptionChange(currentQ._id || currentQuestion, option.id)}
                 />
                 {option.text}
               </label>
@@ -276,7 +263,7 @@ const AptitudeTest = () => {
           <button 
             className="submit-btn" 
             onClick={handleSubmit}
-            disabled={!answers[currentQ.id]}
+            disabled={!answers[currentQ._id || currentQuestion]}
           >
             {currentQuestion === questions.length - 1 ? 'Submit Test' : 'Next'}
           </button>
@@ -335,7 +322,6 @@ const AptitudeTest = () => {
           </div>
         </div>
       )}
-
     </div>
   );
 };

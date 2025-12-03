@@ -8,7 +8,8 @@ import { useReviews } from '../context/ReviewsContext';
 const AdminDashboard = () => {
   const { reviews, deleteReview, addAchievement } = useReviews();
   const [achievers, setAchievers] = useState([]);
-  // view can be 'reviews' | 'upload' | 'manage'
+  const [questions, setQuestions] = useState([]);
+  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question'
   const [view, setView] = useState('reviews');
   const [filteredReviews, setFilteredReviews] = useState(reviews);
   const [filters, setFilters] = useState({
@@ -22,6 +23,33 @@ const AdminDashboard = () => {
   });
   const [showAchievementForm, setShowAchievementForm] = useState(false);
   const [notification, setNotification] = useState('');
+  const [questionForm, setQuestionForm] = useState({
+    question: '',
+    options: [
+      { id: 'a', text: '' },
+      { id: 'b', text: '' },
+      { id: 'c', text: '' },
+      { id: 'd', text: '' }
+    ],
+    correctAnswer: 'a'
+  });
+  const [editingQuestion, setEditingQuestion] = useState(null);
+
+  // Fetch questions from API
+  const fetchQuestions = async () => {
+    try {
+      const response = await axios.get('http://localhost:5000/api/questions');
+      if (response.data.success) {
+        setQuestions(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching questions:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchQuestions();
+  }, []);
 
   // Apply filters whenever reviews or filters change
   useEffect(() => {
@@ -244,6 +272,72 @@ const AdminDashboard = () => {
     setTimeout(() => setNotification(''), 3000);
   };
 
+  // Question management functions
+  const handleQuestionSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      if (editingQuestion) {
+        // Update existing question
+        await axios.put(`http://localhost:5000/api/questions/${editingQuestion._id}`, questionForm);
+        showNotification('Question updated successfully');
+      } else {
+        // Add new question
+        await axios.post('http://localhost:5000/api/questions', questionForm);
+        showNotification('Question added successfully');
+      }
+      
+      // Reset form and fetch questions
+      setQuestionForm({
+        question: '',
+        options: [
+          { id: 'a', text: '' },
+          { id: 'b', text: '' },
+          { id: 'c', text: '' },
+          { id: 'd', text: '' }
+        ],
+        correctAnswer: 'a'
+      });
+      setEditingQuestion(null);
+      fetchQuestions();
+      setView('questions');
+    } catch (error) {
+      console.error('Error saving question:', error);
+      alert('Failed to save question');
+    }
+  };
+
+  const handleEditQuestion = (question) => {
+    setEditingQuestion(question);
+    setQuestionForm({
+      question: question.question,
+      options: question.options,
+      correctAnswer: question.correctAnswer
+    });
+    setView('add-question');
+  };
+
+  const handleDeleteQuestion = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this question?')) return;
+    try {
+      await axios.delete(`http://localhost:5000/api/questions/${id}`);
+      showNotification('Question deleted successfully');
+      fetchQuestions();
+    } catch (error) {
+      console.error('Error deleting question:', error);
+      alert('Failed to delete question');
+    }
+  };
+
+  const handleQuestionChange = (e, field, optionIndex = null) => {
+    if (field === 'options') {
+      const newOptions = [...questionForm.options];
+      newOptions[optionIndex].text = e.target.value;
+      setQuestionForm(prev => ({ ...prev, options: newOptions }));
+    } else {
+      setQuestionForm(prev => ({ ...prev, [field]: e.target.value }));
+    }
+  };
+
   const renderStars = (rating) => {
     return Array(5).fill(0).map((_, i) => (
       <span key={i} className={i < rating ? "star filled" : "star"}>★</span>
@@ -293,6 +387,33 @@ const AdminDashboard = () => {
             }}
           >
             Manage Achievements
+          </button>
+          <button
+            className={`sidebar-btn ${view === 'questions' ? 'active' : ''}`}
+            onClick={() => {
+              setView('questions');
+            }}
+          >
+            Manage Questions
+          </button>
+          <button
+            className={`sidebar-btn ${view === 'add-question' ? 'active' : ''}`}
+            onClick={() => {
+              setEditingQuestion(null);
+              setQuestionForm({
+                question: '',
+                options: [
+                  { id: 'a', text: '' },
+                  { id: 'b', text: '' },
+                  { id: 'c', text: '' },
+                  { id: 'd', text: '' }
+                ],
+                correctAnswer: 'a'
+              });
+              setView('add-question');
+            }}
+          >
+            Add Question
           </button>
 
           <div className="stats">
@@ -449,6 +570,119 @@ const AdminDashboard = () => {
                 )}
               </div>
             </>
+          ) : view === 'questions' ? (
+            <div className="questions-admin">
+              <h2>Manage Questions</h2>
+              {questions.length === 0 ? (
+                <div className="no-results">
+                  <p>No questions added yet</p>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => setView('add-question')}
+                    style={{ marginTop: '1rem' }}
+                  >
+                    Add First Question
+                  </button>
+                </div>
+              ) : (
+                <div className="questions-list">
+                  {questions.map((q, index) => (
+                    <div key={q._id} className="question-card">
+                      <div className="question-header">
+                        <span className="question-number">Q{index + 1}</span>
+                        <div className="question-actions">
+                          <button 
+                            className="btn-secondary" 
+                            onClick={() => handleEditQuestion(q)}
+                          >
+                            Edit
+                          </button>
+                          <button 
+                            className="btn-delete" 
+                            onClick={() => handleDeleteQuestion(q._id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </div>
+                      <div className="question-content">
+                        <p className="question-text">{q.question}</p>
+                        <div className="options-list">
+                          {q.options.map((opt) => (
+                            <div 
+                              key={opt.id} 
+                              className={`option-item ${opt.id === q.correctAnswer ? 'correct-answer' : ''}`}
+                            >
+                              <span className="option-label">{opt.id.toUpperCase()}.</span>
+                              <span className="option-text">{opt.text}</span>
+                              {opt.id === q.correctAnswer && (
+                                <span className="correct-badge">✓</span>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : view === 'add-question' ? (
+            <div className="question-form-section">
+              <h2>{editingQuestion ? 'Edit Question' : 'Add New Question'}</h2>
+              <form onSubmit={handleQuestionSubmit} className="question-form">
+                <div className="form-group">
+                  <label htmlFor="question">Question</label>
+                  <textarea
+                    id="question"
+                    value={questionForm.question}
+                    onChange={(e) => handleQuestionChange(e, 'question')}
+                    placeholder="Enter your question here..."
+                    required
+                    rows={3}
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label>Options</label>
+                  {questionForm.options.map((option, index) => (
+                    <div key={option.id} className="option-input-group">
+                      <span className="option-label">{option.id.toUpperCase()}.</span>
+                      <input
+                        type="text"
+                        value={option.text}
+                        onChange={(e) => handleQuestionChange(e, 'options', index)}
+                        placeholder={`Option ${option.id.toUpperCase()}`}
+                        required
+                      />
+                    </div>
+                  ))}
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="correctAnswer">Correct Answer</label>
+                  <select
+                    id="correctAnswer"
+                    value={questionForm.correctAnswer}
+                    onChange={(e) => handleQuestionChange(e, 'correctAnswer')}
+                  >
+                    <option value="a">Option A</option>
+                    <option value="b">Option B</option>
+                    <option value="c">Option C</option>
+                    <option value="d">Option D</option>
+                  </select>
+                </div>
+
+                <div className="form-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setView('questions')}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    {editingQuestion ? 'Update Question' : 'Add Question'}
+                  </button>
+                </div>
+              </form>
+            </div>
           ) : (
             <div className="achievers-admin">
               <h2>Manage Achievements</h2>
