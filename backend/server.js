@@ -45,6 +45,8 @@ app.use('/api/reviews', reviewRoutes);
 
 app.post("/send-mail", async (req, res) => {
   const { name, phone, className, score, total, consultationDate, consultationTime } = req.body;
+  
+  console.log('Received request:', { name, phone, className, score, total, consultationDate, consultationTime });
 
   try {
     let emailContent = `
@@ -65,18 +67,20 @@ Time: ${consultationTime}
       `;
     }
 
+    console.log('Sending email with content:', emailContent);
+
    await transporter.sendMail({
-  from: `"${name}" anothersachinbansal@gmail.com`, // Name from form + your email
-  to: "anothersachinbansal@gmail.com",
-  subject: "New Aptitude Test Submission" + (consultationDate ? " & Consultation Booking" : ""),
-  text: emailContent
-});
+      from: `"${name || 'Aptitude Test User'}" <anothersachinbansal@gmail.com>`, // Name from form + your email
+      to: "anothersachinbansal@gmail.com",
+      subject: "New Aptitude Test Submission" + (consultationDate ? " & Consultation Booking" : ""),
+      text: emailContent
+    });
 
-
+    console.log('Email sent successfully');
     res.json({ success: true, message: "Email Sent Successfully" });
   } catch (error) {
-    console.log(error);
-    res.status(500).json({ success: false, message: "Error sending email" });
+    console.error('Error sending email:', error);
+    res.status(500).json({ success: false, message: "Error sending email", error: error.message });
   }
 });
 
