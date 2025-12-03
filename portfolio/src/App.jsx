@@ -14,6 +14,7 @@ import { ReviewsProvider } from './components/context/ReviewsContext'
 import Footer from './components/Footer/Footer'
 import Admin from './components/Admin/Admin'
 import RequireAuth from './components/Auth/RequireAuth'
+import AptitudeTest from './components/AptitudeTest/AptitudeTest'
 
 function App() {
 
@@ -36,6 +37,7 @@ function App() {
             <Route path="/writereview" element={<WriteReview />} />
             <Route path="/allreviews" element={<AllReviews />} />
             <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+            <Route path="/aptitude-test" element={<AptitudeTest />} />
             </Routes>
         </ReviewsProvider>
       </BrowserRouter>

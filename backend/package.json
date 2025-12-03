@@ -23,6 +23,7 @@
     "mongodb": "^6.20.0",
     "mongoose": "^8.18.2",
     "multer": "^2.0.2",
+    "nodemailer": "^7.0.11",
     "unzipper": "^0.12.3"
   }
 }
