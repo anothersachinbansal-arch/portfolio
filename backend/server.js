@@ -65,12 +65,13 @@ Time: ${consultationTime}
       `;
     }
 
-    await transporter.sendMail({
-      from: "anothersachinbansal@gmail.com",
-      to: "2sachinbansal@gmail.com", // jisme mail chahiye
-      subject: "New Aptitude Test Submission" + (consultationDate ? " & Consultation Booking" : ""),
-      text: emailContent
-    });
+   await transporter.sendMail({
+  from: `"${name}" anothersachinbansal@gmail.com`, // Name from form + your email
+  to: "anothersachinbansal@gmail.com",
+  subject: "New Aptitude Test Submission" + (consultationDate ? " & Consultation Booking" : ""),
+  text: emailContent
+});
+
 
     res.json({ success: true, message: "Email Sent Successfully" });
   } catch (error) {

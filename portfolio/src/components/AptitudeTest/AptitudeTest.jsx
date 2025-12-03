@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import axios from "axios";
+import { useNavigate } from 'react-router-dom';
 import './AptitudeTest.css';
 import { FaArrowLeft, FaArrowRight, FaCheck, FaTimes, FaGift } from 'react-icons/fa';
 import ScratchCard from './ScratchCard';
@@ -41,6 +42,7 @@ const questions = [
 ];
 
 const AptitudeTest = () => {
+  const navigate = useNavigate();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState({});
   const [showResults, setShowResults] = useState(false);
@@ -106,8 +108,8 @@ const AptitudeTest = () => {
       
       if (response.data.success) {
         alert("Email sent successfully with all details!");
-        // Redirect to /aptitude-test after successful submission
-        window.location.href = '/aptitude-test';
+        // Navigate to /aptitude-test after successful submission
+        navigate('/aptitude-test');
       } else {
         alert("Email sending failed.");
       }
@@ -197,6 +199,33 @@ const AptitudeTest = () => {
               />
             </div>
           )}
+        </div>
+        
+        <div className="answers-review">
+          <h3>Review Answers</h3>
+          {questions.map((question, index) => {
+            const isCorrect = answers[question.id] === question.correctAnswer;
+            return (
+              <div key={index} className={`answer-item ${isCorrect ? 'correct' : 'incorrect'}`}>
+                <div className="question-text">
+                  <strong>Q{index + 1}.</strong> {question.question}
+                </div>
+                <div className="answer-details">
+                  <span>Your answer: {answers[question.id] || 'Not answered'}</span>
+                  {!isCorrect && (
+                    <span className="correct-answer">
+                      Correct answer: {question.correctAnswer}
+                    </span>
+                  )}
+                  {isCorrect ? (
+                    <FaCheck className="answer-icon correct" />
+                  ) : (
+                    <FaTimes className="answer-icon incorrect" />
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     );
