@@ -21,7 +21,7 @@ await mongoose.connect(process.env.MONGO_URI, {
   useUnifiedTopology: true,
 });
 
-console.log("✅ MongoDB connected");
+("✅ MongoDB connected");
 
 // ✅ Extract ZIP and Upload
 async function uploadZip(zipPath, extractTo = "./temp") {
@@ -31,7 +31,7 @@ async function uploadZip(zipPath, extractTo = "./temp") {
     .pipe(unzipper.Extract({ path: extractTo }))
     .promise();
 
-  console.log("✅ Extraction Done");
+  ("✅ Extraction Done");
 
   // 2. Read all images
   const files = fs.readdirSync(extractTo);
@@ -58,7 +58,7 @@ async function uploadZip(zipPath, extractTo = "./temp") {
 
       await newAchiever.save();
 
-      console.log(`✅ Uploaded & Saved: ${file}`);
+      (`✅ Uploaded & Saved: ${file}`);
     } catch (err) {
       console.error(`❌ Error in ${file}:`, err.message);
     }
@@ -66,9 +66,9 @@ async function uploadZip(zipPath, extractTo = "./temp") {
 
   // 5. Clean up extracted files (optional)
   fs.rmSync(extractTo, { recursive: true, force: true });
-  console.log("🧹 Temp folder deleted");
+  ("🧹 Temp folder deleted");
 
-  console.log("🎉 All done!");
+  ("🎉 All done!");
   mongoose.disconnect();
 }
 

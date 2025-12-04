@@ -7,7 +7,7 @@ dotenv.config();
 const createAdmin = async () => {
   try {
     await mongoose.connect(process.env.MONGO_URI);
-    console.log("MongoDB Connected...");
+    ("MongoDB Connected...");
 
     const email = "polsciencewithsachinsir@gmail.com";
     const plainPassword = "sachinbansal817835";
@@ -17,7 +17,7 @@ const createAdmin = async () => {
       // update the password to ensure you know it
       existingAdmin.password = plainPassword; // will be hashed by pre-save hook
       await existingAdmin.save();
-      console.log("✅ Admin password updated successfully!");
+      ("✅ Admin password updated successfully!");
       process.exit(0);
     }
     const admin = new Admin({
@@ -27,7 +27,7 @@ const createAdmin = async () => {
     });
 
     await admin.save();
-    console.log("✅ Admin user created successfully!");
+    ("✅ Admin user created successfully!");
     process.exit(0);
   } catch (err) {
     console.error("Error creating admin:", err.message);

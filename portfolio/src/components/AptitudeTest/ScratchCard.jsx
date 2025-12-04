@@ -139,7 +139,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
 
   const handleFormSubmit = (e) => {
     e.preventDefault();
-    console.log('Form submission attempt with formData:', formData);
+    ('Form submission attempt with formData:', formData);
     if (onSubmit && formData.date && formData.time) {
       // Get local date without timezone conversion
       const year = formData.date.getFullYear();
@@ -147,7 +147,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
       const day = String(formData.date.getDate()).padStart(2, '0');
       const formattedDate = `${year}-${month}-${day}`;
       
-      console.log('Submitting consultation data:', {
+      ('Submitting consultation data:', {
         date: formattedDate,
         time: formData.time,
         rawDate: formData.date,
@@ -158,7 +158,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
         time: formData.time
       });
     } else {
-      console.log('Form validation failed:', {
+      ('Form validation failed:', {
         hasDate: !!formData.date,
         hasTime: !!formData.time,
         date: formData.date,
@@ -255,7 +255,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
                 <DatePicker
                   selected={formData.date}
                   onChange={(date) => {
-                    console.log('Date selected:', date);
+                    ('Date selected:', date);
                     setFormData({...formData, date});
                   }}
                   minDate={new Date()}
@@ -283,7 +283,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
                       type="button"
                       className={`time-slot ${formData.time === time ? 'selected' : ''}`}
                       onClick={() => {
-                        console.log('Time selected:', time);
+                        ('Time selected:', time);
                         setFormData(prev => ({...prev, time}));
                       }}
                     >

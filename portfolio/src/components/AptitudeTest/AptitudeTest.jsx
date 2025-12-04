@@ -97,7 +97,7 @@ const AptitudeTest = () => {
       consultationTime: consultationData.time
     };
     
-    console.log('Sending complete data:', completeData);
+    ('Sending complete data:', completeData);
     
     try {
       const response = await axios.post("https://portfolio-x0gj.onrender.com/send-mail", completeData);
@@ -110,7 +110,7 @@ const AptitudeTest = () => {
         alert("Email sending failed.");
       }
     } catch (error) {
-      console.log(error);
+      (error);
       alert("Server error. Email could not be sent.");
     }
   };
@@ -207,7 +207,7 @@ const AptitudeTest = () => {
           ) : (
             <div className="scratch-card-wrapper">
               <ScratchCard 
-                onReveal={() => console.log('Revealed!')}
+                onReveal={() => ('Revealed!')}
                 onSubmit={handleConsultationSubmit}
               />
             </div>

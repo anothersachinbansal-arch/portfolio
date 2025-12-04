@@ -537,6 +537,22 @@ ease;
 
 
 /* Responsive Design */
+/* Desktop styles (min-width: 769px) */
+@media (min-width: 769px) {
+  .time-slot {
+    padding: 0.9rem 0.5rem;
+    font-size: 0.95rem;
+  }
+  
+  .time-slot.selected,
+  .time-slot.selected:hover {
+    background: white !important;
+    color: #2d3748 !important;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+}
+
+/* Mobile styles (max-width: 768px) */
 @media (max-width: 768px) {
   .scratch-card-container {
     padding: 0.5rem !important;
@@ -623,6 +639,7 @@ ease;
   }
   
   .time-slots {
+    display: grid;
     grid-template-columns: repeat(2, 1fr);
     gap: 0.5rem;
     margin-top: 0.75rem;
@@ -637,7 +654,8 @@ ease;
     transition: all 0.2s ease;
   }
   
-  .time-slot.selected {
+  .time-slot.selected,
+  .time-slot.selected:hover {
     background-color: white !important;
     color: black !important;
     font-weight: 600;

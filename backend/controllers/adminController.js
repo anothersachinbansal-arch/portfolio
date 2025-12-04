@@ -14,21 +14,21 @@ export const loginAdmin = async (req, res) => {
   }
 
   try {
-    console.log("Attempting to find admin with email:", email);
+    ("Attempting to find admin with email:", email);
     const admin = await Admin.findOne({ email }).select("+password name email role");
     
     if (!admin) {
-      console.log("No admin found with email:", email);
+      ("No admin found with email:", email);
       return res.status(401).json({ 
         success: false, 
         message: "Invalid email or password" 
       });
     }
 
-    console.log("Admin found, comparing password...");
+    ("Admin found, comparing password...");
     const isMatch = await bcrypt.compare(password, admin.password);
     if (!isMatch) {
-      console.log("Password does not match for admin:", email);
+      ("Password does not match for admin:", email);
       return res.status(401).json({ 
         success: false, 
         message: "Invalid email or password" 
@@ -43,14 +43,14 @@ export const loginAdmin = async (req, res) => {
       });
     }
 
-    console.log("Generating JWT token...");
+    ("Generating JWT token...");
     const token = jwt.sign(
       { id: admin._id, email: admin.email, role: admin.role },
       process.env.JWT_SECRET,
       { expiresIn: "1d" }
     );
 
-    console.log("Login successful for admin:", email);
+    ("Login successful for admin:", email);
     res.json({ 
       success: true,
       token, 
