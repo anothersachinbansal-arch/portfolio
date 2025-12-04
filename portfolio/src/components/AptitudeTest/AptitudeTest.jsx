@@ -195,7 +195,6 @@ const AptitudeTest = () => {
             </div>
           ))}
         </div>
-
         <div style={{margin: '2rem 0'}}>
           {!showScratchCard ? (
             <button 
@@ -214,6 +213,63 @@ const AptitudeTest = () => {
             </div>
           )}
         </div>
+
+        <div className="questions-review">
+          <h3>Test Review</h3>
+          {questions.map((question, qIndex) => {
+            const userAnswer = answers[question._id || qIndex];
+            const isCorrect = userAnswer === question.correctAnswer;
+            
+            return (
+              <div key={qIndex} className={`question-review ${isCorrect ? 'correct' : 'incorrect'}`}>
+                <div className="question-text">
+                  <strong>Question {qIndex + 1}:</strong> {question.question}
+                  {isCorrect ? (
+                    <span className="result-icon correct"><FaCheck /></span>
+                  ) : (
+                    <span className="result-icon incorrect"><FaTimes /></span>
+                  )}
+                </div>
+                <div className="options-review">
+                  {question.options.map((option, oIndex) => {
+                    const isUserAnswer = option.id === userAnswer;
+                    const isRightAnswer = option.id === question.correctAnswer;
+                    let optionClass = '';
+                    
+                    if (isUserAnswer && isRightAnswer) {
+                      optionClass = 'correct-answer';
+                    } else if (isUserAnswer && !isRightAnswer) {
+                      optionClass = 'wrong-answer';
+                    } else if (isRightAnswer) {
+                      optionClass = 'correct-answer';
+                    }
+                    
+                    return (
+                      <div key={oIndex} className={`option-review ${optionClass}`}>
+                        <input 
+                          type="radio" 
+                          checked={isUserAnswer}
+                          readOnly 
+                        />
+                        <span>{option.text}</span>
+                        {option.id === question.correctAnswer && (
+                          <span className="correct-tick"><FaCheck /></span>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+                {!isCorrect && (
+                  <div className="correct-answer-message">
+                    Correct Answer: {question.options.find(opt => opt.id === question.correctAnswer)?.text}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        
       </div>
     );
   }
