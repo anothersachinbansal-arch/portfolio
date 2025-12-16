@@ -15,6 +15,7 @@ import Footer from './components/Footer/Footer'
 import Admin from './components/Admin/Admin'
 import RequireAuth from './components/Auth/RequireAuth'
 import AptitudeTest from './components/AptitudeTest/AptitudeTest'
+import CareerAptitudeTest from './components/AptitudeTest/CareerAptitudeTest'
 
 function App() {
 
@@ -38,6 +39,7 @@ function App() {
             <Route path="/allreviews" element={<AllReviews />} />
             <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
             <Route path="/aptitude-test" element={<AptitudeTest />} />
+            <Route path="/career-aptitude-test" element={<CareerAptitudeTest />} />
             </Routes>
         </ReviewsProvider>
       </BrowserRouter>

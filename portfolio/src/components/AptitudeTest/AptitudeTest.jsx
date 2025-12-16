@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from "axios";
 import './AptitudeTest.css';
+import { NavLink } from "react-router-dom";
 import { FaArrowLeft, FaArrowRight, FaCheck, FaTimes, FaGift, FaSpinner } from 'react-icons/fa';
 import ScratchCard from './ScratchCard';
 
@@ -149,9 +150,14 @@ const AptitudeTest = () => {
   if (questions.length === 0) {
     return (
       <div className="error-container">
-        <h2>No questions available</h2>
-        {error && <p className="error-message">{error}</p>}
-      </div>
+  <h2>No questions available, attempt the Free Career Test for now 👋</h2>
+
+  {error && <p className="error-message">{error}</p>}
+
+  <NavLink to="/career-aptitude-test" className="career-test-btn">
+    Attempt Free Career Test
+  </NavLink>
+</div>
     );
   }
 
@@ -287,6 +293,8 @@ const AptitudeTest = () => {
               style={{ width: `${((currentQuestion + 1) / questions.length) * 100}%` }}
             ></div>
           </div>
+
+          
 
           <h3>Question {currentQuestion + 1} of {questions.length}</h3>
           <p>{currentQ.question}</p>

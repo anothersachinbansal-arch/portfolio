@@ -70,7 +70,7 @@ app.post("/send-mail", async (req, res) => {
 
   try {
     const emailContent = `
-      <h2>New Aptitude Test Submission</h2>
+      <h2>Aptitude Test Result </h2>
       <p><strong>Name:</strong> ${name}</p>
       <p><strong>Phone:</strong> ${phone}</p>
       <p><strong>Class:</strong> ${className}</p>
@@ -103,6 +103,57 @@ app.post("/send-mail", async (req, res) => {
     res.status(500).json({ success: false, error });
   }
 });
+
+// Add this route before the error handling middleware
+app.post("/send-mail-careertest", async (req, res) => {
+  const {
+    name,
+    phone,
+    className,
+    date,
+    time,
+    results,
+    testType
+  } = req.body;
+
+  try {
+    const emailContent = `
+      <h2>${testType || 'Career Aptitude Test Results'}</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Class:</strong> ${className}</p>
+      
+      <h3>Test Results:</h3>
+      <pre>${results}</pre>
+
+      ${date && time ? `
+        <h3>Consultation Details:</h3>
+        <p><strong>Date:</strong> ${date}</p>
+        <p><strong>Time:</strong> ${time}</p>
+      ` : ''}
+    `;
+
+    await resend.emails.send({
+      from: "Career Aptitude Test <onboarding@resend.dev>",
+      to: "kishan817835@gmail.com",
+      subject: date && time 
+        ? "Career Test + Consultation Booking" 
+        : "Career Test Results",
+      html: emailContent
+    });
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("Email Error:", error);
+    res.status(500).json({ 
+      success: false, 
+      error: "Failed to send email" 
+    });
+  }
+});
+
+
+
 
 // ===============================
 // Health Check

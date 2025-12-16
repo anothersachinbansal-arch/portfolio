@@ -79,7 +79,7 @@ const Footer = () => {
       </div>
 
       <div className="footer-bottom">
-        <p>© {new Date().getFullYear()} Sachin Bansal. All Rights Reserved.</p>
+        <p>© {new Date().getFullYear()} Sachin Bansal. All Rights Reserved.</p><span>website Designed and Developed By <a href="https://upsoma.in" style={{textDecoration:'none',fontSize:'18px',fontWeight:600,color:'#16a34a'}}>Upsoma Consultany</a> </span>
       </div>
     </footer>
   );
