@@ -71,27 +71,75 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     }
   }, [canvas]);
 
+  // Store last point for smooth line drawing
+  const lastPoint = React.useRef({ x: 0, y: 0 });
+  const isDrawing = React.useRef(false);
+
   const startScratching = (e) => {
-    setIsScratching(true);
     const rect = canvas.getBoundingClientRect();
-    setPosition({
-      x: (e.clientX || e.touches[0].clientX) - rect.left,
-      y: (e.clientY || e.touches[0].clientY) - rect.top
-    });
+    const x = (e.clientX || e.touches[0].clientX) - rect.left;
+    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    
+    lastPoint.current = { x, y };
+    isDrawing.current = true;
+    setIsScratching(true);
+    
+    // Draw initial circle at touch/click start
+    if (ctx) {
+      ctx.globalCompositeOperation = 'destination-out';
+      ctx.beginPath();
+      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.fill();
+    }
   };
 
   const scratch = (e) => {
-    if (!isScratching) return;
+    if (!isScratching || !isDrawing.current) return;
     
     const rect = canvas.getBoundingClientRect();
     const x = (e.clientX || e.touches[0].clientX) - rect.left;
     const y = (e.clientY || e.touches[0].clientY) - rect.top;
 
     if (ctx) {
+      // Draw a line from last point to current point for smoother scratching
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
-      ctx.fill();
+      ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
+      
+      // Calculate distance between points
+      const distance = Math.sqrt(
+        Math.pow(x - lastPoint.current.x, 2) + 
+        Math.pow(y - lastPoint.current.y, 2)
+      );
+      
+      // Draw multiple circles along the line for smoother effect
+      const steps = Math.max(2, Math.ceil(distance / 5));
+      for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const cx = lastPoint.current.x + (x - lastPoint.current.x) * t;
+        const cy = lastPoint.current.y + (y - lastPoint.current.y) * t;
+        
+        // Vary the brush size slightly for a more natural feel
+        const radius = 15 + Math.sin(Date.now() * 0.02) * 2;
+        
+        if (i === 0) {
+          ctx.moveTo(cx + radius, cy);
+        } else {
+          ctx.lineTo(cx, cy);
+        }
+        
+        // Draw additional circles for smoother edges
+        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
+      }
+      
+      ctx.strokeStyle = 'rgba(0,0,0,1)';
+      ctx.lineWidth = 30; // Double the line width for better coverage
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      ctx.stroke();
+      
+      // Update last point
+      lastPoint.current = { x, y };
       
       // Check if enough area is scratched
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
@@ -119,14 +167,27 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     setPosition({ x, y });
   };
 
-  const stopScratching = () => {
+  const endScratching = () => {
+    isDrawing.current = false;
     setIsScratching(false);
   };
 
   const handleMouseLeave = () => {
     if (isScratching) {
-      stopScratching();
+      endScratching();
     }
+  };
+
+  const handleTouchStart = (e) => {
+    startScratching(e);
+  };
+
+  const handleTouchMove = (e) => {
+    scratch(e);
+  };
+
+  const handleTouchEnd = () => {
+    endScratching();
   };
 
   const handleInputChange = (e) => {
@@ -209,18 +270,20 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
               </div>
             </div>
         <canvas
-          ref={(el) => setCanvas(el)}
+          ref={setCanvas}
           width={300}
           height={200}
           onMouseDown={startScratching}
           onMouseMove={scratch}
-          onMouseUp={stopScratching}
-          onMouseLeave={handleMouseLeave}
-          onTouchStart={startScratching}
-          onTouchMove={scratch}
-          onTouchEnd={stopScratching}
+          onMouseUp={endScratching}
+          onMouseLeave={endScratching}
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          onTouchCancel={endScratching}
           className={isRevealed ? 'scratched' : ''}
-            />
+          style={{ touchAction: 'none' }}
+        />
           </div>
           
           {showConfetti && (
@@ -249,7 +312,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
             
             <div className="form-group">
               <div className="input-icon">
-                <FaCalendarAlt />
+               
               </div>
               <div className="date-picker-container">
                 <DatePicker
@@ -272,7 +335,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
             
             <div className="form-group">
               <div className="input-icon">
-                <FaClock />
+                
               </div>
               <div className="time-slots-container">
                 <h4>Select a Time Slot</h4>

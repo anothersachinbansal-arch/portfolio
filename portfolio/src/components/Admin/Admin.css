@@ -373,6 +373,7 @@
     border-radius: 6px;
     font-size: 1rem;
     box-sizing: border-box;
+    padding-left: 34px;
   }
   
   .image-upload-container {

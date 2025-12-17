@@ -293,6 +293,7 @@ const handleConsultationSubmit = async (consultationData) => {
             <form onSubmit={handleFormSubmit}>
               <div className="form-group">
                 <label htmlFor="name">Full Name</label>
+                <i className="fas fa-user"></i>
                 <input
                   type="text"
                   id="name"
@@ -306,6 +307,7 @@ const handleConsultationSubmit = async (consultationData) => {
               
               <div className="form-group">
                 <label htmlFor="phone">Mobile Number</label>
+                <i className="fas fa-phone"></i>
                 <input
                   type="tel"
                   id="phone"
@@ -321,6 +323,7 @@ const handleConsultationSubmit = async (consultationData) => {
               
               <div className="form-group">
                 <label htmlFor="className">Class</label>
+                <i className="fas fa-graduation-cap"></i>
                 <input
                   type="text"
                   id="className"
@@ -512,23 +515,42 @@ const handleConsultationSubmit = async (consultationData) => {
     );
   }
 
-  const progress = (
-    (currentCategoryIndex * 100 / categories.length) + 
-    ((currentQuestionIndex + 1) * 100 / (categories.length * currentCategory.questions.length))
-  ).toFixed(1);
+  // Calculate total questions (6 categories * 4 questions each = 24 total)
+  const totalQuestions = categories.length * categories[0].questions.length;
+  // Calculate current question number (0-23) + 1 for 1-based index
+  const currentQuestionNumber = (currentCategoryIndex * categories[0].questions.length) + currentQuestionIndex + 1;
+  // Calculate progress percentage
+  const progress = ((currentQuestionNumber / totalQuestions) * 100).toFixed(1);
 
   return (
     <div className="aptitude-test-container">
-      <div className="progress-bar">
-        <div 
-          className="progress" 
-          style={{ width: `${progress}%` }}
-        ></div>
+      {/* Progress Bar */}
+      <div className="progress-container" style={{ marginBottom: '20px' }}>
+        <div className="progress-bar">
+          <div 
+            className="progress" 
+            style={{ 
+              width: `${progress}%`,
+              height: '8px',
+              backgroundColor: '#4a90e2',
+              borderRadius: '4px',
+              transition: 'width 0.3s ease'
+            }}
+          ></div>
+        </div>
+        <div style={{ 
+          textAlign: 'right',
+          fontSize: '0.9rem',
+          color: '#666',
+          marginTop: '4px'
+        }}>
+          {progress}% Complete
+        </div>
       </div>
       
-      <div className="category-header">
-        <h2>{currentCategory.name}</h2>
-        <p>Question {currentQuestionIndex + 1} of {currentCategory.questions.length}</p>
+      {/* Question Counter */}
+      <div className="question-counter">
+        Question {currentQuestionNumber} of {totalQuestions}
       </div>
       
       <div className="question-container">

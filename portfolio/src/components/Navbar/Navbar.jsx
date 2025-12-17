@@ -106,10 +106,6 @@ const Navbar = () => {
               <i className="fas fa-envelope"></i>
               <span>CONTACT ME</span>
             </button>
-            <Link to="/aptitude-test" className="navbar-item" onClick={() => setIsMenuOpen(false)}>
-              <i className="fas fa-question-circle"></i>
-              <span>APTITUDE TEST</span>
-            </Link>
             <Link to="/career-aptitude-test" className="navbar-item" onClick={() => setIsMenuOpen(false)}>
               <i className="fas fa-briefcase"></i>
               <span>CAREER TEST</span>

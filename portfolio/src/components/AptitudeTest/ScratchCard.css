@@ -236,11 +236,15 @@
   margin-bottom: 1.75rem;
   z-index: 1;
 }
+.react-datepicker__day-name, .react-datepicker__day, .react-datepicker__time-name{
+  margin-top: 17px;
+}
+
 
 .consultation-form .input-icon {
       position: absolute;
-    left: 2px;
-    top: 20px;
+        left: 18px;
+    top: 38px;
     color: #94a3b8;
     z-index: 10;
     transition: all 0.3s 
@@ -307,6 +311,7 @@ ease;
   justify-content: space-between;
   margin: 8px 0 4px;
   padding: 0 8px;
+  margin-bottom: 14px;
 }
 
 .react-datepicker__day-name {
