@@ -211,37 +211,16 @@ const CareerAptitudeTest = () => {
     }));
   };
 
-  const handleFormSubmit = (e) => {
-    e.preventDefault();
-    
-    // Store test data
-    setTestData({
-      name: formData.name,
-      phone: formData.phone,
-      className: formData.className,
-      scores: scores
-    });
-    
-    setShowForm(false);
-    setShowResults(true);
-  };
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value
-    });
-  };
-
-  const revealScratchCard = () => {
-    setShowScratchCard(true);
-  };
-
 const handleConsultationSubmit = async (consultationData) => {
   if (!testData) return;
-  
-  // Format the results with category scores
+
+  // 🔔 IMMEDIATE SUCCESS TOAST (button click pe hi)
+  toast.success("Your Session is Booked successfully", {
+    position: "top-center",
+    autoClose: 3000,
+  });
+
+  // Format results
   const resultsString = [
     `Realistic (The Maker): ${scores.R}/4`,
     `Investigative (The Analyst): ${scores.I}/4`,
@@ -251,7 +230,6 @@ const handleConsultationSubmit = async (consultationData) => {
     `Conventional (The Organizer): ${scores.C}/4`
   ].join('\n');
 
-  // Prepare data for email
   const emailData = {
     name: testData.name,
     phone: testData.phone,
@@ -262,56 +240,20 @@ const handleConsultationSubmit = async (consultationData) => {
     testType: 'Career Aptitude Test'
   };
 
-try {
-  const response = await axios.post(
-    "https://portfolio-x0gj.onrender.com/send-mail-careertest",
-    emailData
-  );
-
-  toast.success("Your Session is Booked successfully", {
-    position: "top-center",
-    autoClose: 5000,
-    hideProgressBar: false,
-    closeOnClick: true,
-    pauseOnHover: true,
-    draggable: true,
-  });
-
-} catch (error) {
-  console.error(error);
-  toast.error("Something went wrong. Please try again.", {
-    position: "top-center",
-  });
-}
-
-    
-   
-
-      // Redirect after a short delay to let the user see the success message
-      setTimeout(() => {
-        window.location.href = '/career-aptitude-test';
-      }, 2000);
-    } else {
-      toast.error("Failed to book your session. Please try again !", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
-    }
+  // 🚀 API call background me chalega
+  try {
+    await axios.post(
+      "https://portfolio-x0gj.onrender.com/send-mail-careertest",
+      emailData
+    );
   } catch (error) {
-    console.error('Error:', error);
-    toast.error("An error occurred. Please try again later.", {
-      position: "top-center",
-      autoClose: 5000,
-      hideProgressBar: false,
-      closeOnClick: true,
-      pauseOnHover: true,
-      draggable: true,
-    });
+    console.error("Mail error:", error);
   }
+
+  // 🔁 Redirect
+  setTimeout(() => {
+    window.location.href = '/career-aptitude-test';
+  }, 2000);
 };
 
   // Show form before showing results
