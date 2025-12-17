@@ -262,41 +262,37 @@ const handleConsultationSubmit = async (consultationData) => {
     testType: 'Career Aptitude Test'
   };
 
-  try {
-    const response = await axios.post(
-      "https://portfolio-x0gj.onrender.com/send-mail-careertest",
-      emailData
-    );
-    
-    if (response.data.success) {
-      // Show success toast for email sent
-      toast.success("Your results have been sent successfully!", {
-        position: "top-center",
-        autoClose: 5000,
-        hideProgressBar: false,
-        closeOnClick: true,
-        pauseOnHover: true,
-        draggable: true,
-      });
+try {
+  const response = await axios.post(
+    "https://portfolio-x0gj.onrender.com/send-mail-careertest",
+    emailData
+  );
 
-      // If it's a consultation booking, show additional success message
-      if (consultationData.date && consultationData.time) {
-        toast.success("🎉 Your free session has been booked successfully!", {
-          position: "top-center",
-          autoClose: 5000,
-          hideProgressBar: false,
-          closeOnClick: true,
-          pauseOnHover: true,
-          draggable: true,
-        });
-      }
+  toast.success("Your Session is Booked successfully", {
+    position: "top-center",
+    autoClose: 5000,
+    hideProgressBar: false,
+    closeOnClick: true,
+    pauseOnHover: true,
+    draggable: true,
+  });
+
+} catch (error) {
+  console.error(error);
+  toast.error("Something went wrong. Please try again.", {
+    position: "top-center",
+  });
+}
+
+    
+   
 
       // Redirect after a short delay to let the user see the success message
       setTimeout(() => {
         window.location.href = '/career-aptitude-test';
       }, 2000);
     } else {
-      toast.error("Failed to send results. Please try again.", {
+      toast.error("Failed to book your session. Please try again !", {
         position: "top-center",
         autoClose: 5000,
         hideProgressBar: false,
