@@ -44,7 +44,8 @@
     padding: 25px;
     display: flex;
     flex-direction: column;
-    justify-content: space-between;
+    position: relative;
+    min-height: 300px; /* Fixed height for all cards */
     transition: transform 0.3s ease, box-shadow 0.3s ease;
   }
   
@@ -74,13 +75,37 @@
     margin-bottom: 15px;
     line-height: 1.5;
     font-style: italic;
+    max-height: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 5; /* Show 5 lines max */
+    -webkit-box-orient: vertical;
+    position: relative;
+    flex-grow: 1; /* Takes available space */
+    padding-bottom: 30px; /* Space for stars */
+  }
+  
+  .testimonial-content::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 20px;
+    background: linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.9));
   }
   
   /* Rating Stars */
   .rating {
     color: #ffb400;
     font-size: 1.2rem;
-    margin-bottom: 15px;
+    position: absolute;
+    bottom: 80px; /* Position above author section */
+    left: 0;
+    right: 0;
+    text-align: center;
+    margin: 0;
   }
   
   .star {
@@ -111,7 +136,10 @@
   .testimonial-author {
     display: flex;
     align-items: center;
-    margin-top: auto;
+    position: absolute;
+    bottom: 25px;
+    left: 25px;
+    right: 25px;
     justify-content: center;
     gap: 10px;
   }
