@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { FaCheck, FaTimes, FaPrint, FaRedo, FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import ScratchCard from './ScratchCard';
@@ -6,6 +6,23 @@ import './AptitudeTest.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
+import { initializeApp } from "firebase/app";
+import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDI34cJ_jMMjDgM-kr1vfoZlHBoPgTnAkM",
+  authDomain: "career-test-b0769.firebaseapp.com",
+  projectId: "career-test-b0769",
+  storageBucket: "career-test-b0769.firebasestorage.app",
+  messagingSenderId: "309231346456",
+  appId: "1:309231346456:web:36068fd374d6817cc4f46d",
+  measurementId: "G-RWQFPQZZGM"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
 
 const CareerAptitudeTest = () => {
   const categories = [
@@ -89,14 +106,37 @@ const CareerAptitudeTest = () => {
     phone: '',
     className: ''
   });
+  const [mobile, setMobile] = useState('');
+  const [otp, setOtp] = useState('');
+  const [otpSent, setOtpSent] = useState(false);
+  const [otpVerified, setOtpVerified] = useState(false);
+  const [otpError, setOtpError] = useState('');
+  const [confirmationResult, setConfirmationResult] = useState(null);
+  const [recaptchaVerifierRef, setRecaptchaVerifierRef] = useState(null);
+  const [cooldown, setCooldown] = useState(0);
+  const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [testData, setTestData] = useState(null);
   const [showScratchCard, setShowScratchCard] = useState(false);
+  const [testStarted, setTestStarted] = useState(false);
+  const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  
+  const toggleFaq = (index) => {
+    setOpenFaqIndex(openFaqIndex === index ? null : index);
+  };
 
   const currentCategory = categories[currentCategoryIndex];
   const currentQuestion = currentCategory.questions[currentQuestionIndex];
   const questionId = `${currentCategory.id}_${currentQuestionIndex}`;
 
+  const handleStartTest = () => {
+    setTestStarted(true);
+    setCurrentCategoryIndex(0);
+    setCurrentQuestionIndex(0);
+    setAnswers({});
+  };
+
   const handleAnswer = (answer) => {
+
     // Update answers
     const newAnswers = {
       ...answers,
@@ -124,9 +164,34 @@ const CareerAptitudeTest = () => {
     }
   };
 
-  const getCareerSuggestions = () => {
-    const sortedScores = Object.entries(scores).sort((a, b) => b[1] - a[1]);
-    const topCategories = sortedScores.slice(0, 2).map(item => item[0]);
+  const getCareerSuggestions = (showAll = false) => {
+    // Filter out categories with 0 score and sort by score (highest first)
+    const sortedScores = Object.entries(scores)
+      .filter(([_, score]) => score > 0)
+      .sort((a, b) => b[1] - a[1]);
+      
+    const allCategories = sortedScores.map(item => item[0]);
+    const nonZeroCategories = allCategories.filter(cat => scores[cat] > 0);
+    
+    // Determine how many categories to show
+    let categoriesToShow = [];
+    
+    if (nonZeroCategories.length === 0) {
+      // If no categories have scores, show all
+      categoriesToShow = allCategories;
+    } else if (nonZeroCategories.length === 1) {
+      // If only 1 category has a score, show only that one
+      categoriesToShow = nonZeroCategories;
+    } else if (nonZeroCategories.length <= 3) {
+      // If 2-3 categories have scores, show top 2
+      categoriesToShow = nonZeroCategories.slice(0, 2);
+    } else if (Object.values(scores).every(score => score === 4)) {
+      // If all categories have perfect scores, show all
+      categoriesToShow = allCategories;
+    } else {
+      // Default: show top 2
+      categoriesToShow = nonZeroCategories.slice(0, 2);
+    }
     
     const careerData = {
       'R': {
@@ -205,7 +270,7 @@ const CareerAptitudeTest = () => {
       }
     };
 
-    return topCategories.map(category => ({
+    return categoriesToShow.map(category => ({
       ...careerData[category],
       score: scores[category]
     }));
@@ -214,10 +279,15 @@ const CareerAptitudeTest = () => {
   const handleFormSubmit = (e) => {
     e.preventDefault();
     
+    if (!otpVerified) {
+      alert('Please verify your mobile number first');
+      return;
+    }
+    
     // Store test data
     setTestData({
       name: formData.name,
-      phone: formData.phone,
+      phone: '+91' + mobile,
       className: formData.className,
       scores: scores
     });
@@ -232,6 +302,98 @@ const CareerAptitudeTest = () => {
       ...formData,
       [name]: value
     });
+  };
+
+  const handleSendOtp = async () => {
+    if (!mobile || mobile.length !== 10) {
+      alert('Please enter a valid 10-digit mobile number');
+      return;
+    }
+    
+    setIsSendingOtp(true);
+    
+    try {
+      // Clear any existing reCAPTCHA
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (recaptchaContainer) {
+        recaptchaContainer.innerHTML = '';
+      }
+      
+      // Setup reCAPTCHA verifier
+      const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+        'size': 'invisible',
+        'callback': (response) => {
+          // reCAPTCHA solved
+        },
+        'expired-callback': () => {
+          // Reset reCAPTCHA
+        }
+      });
+      
+      setRecaptchaVerifierRef(verifier);
+      
+      // Send OTP
+      const phoneNumber = '+91' + mobile;
+      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, verifier);
+      
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      setOtpVerified(false);
+      setOtpError('');
+      toast.success('OTP sent to +91' + mobile);
+      
+      // Start 30-second cooldown
+      setCooldown(30);
+      const timer = setInterval(() => {
+        setCooldown((prev) => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      
+    } catch (error) {
+      console.error('Error sending OTP:', error);
+      let errorMessage = 'Failed to send OTP. Please try again.';
+      
+      if (error.code === 'auth/argument-error') {
+        errorMessage = 'Invalid phone number format. Please check your number.';
+      } else if (error.code === 'auth/too-many-requests') {
+        errorMessage = 'Too many requests. Please try again later.';
+      } else if (error.code === 'auth/invalid-app-credential') {
+        errorMessage = 'App verification failed. Please refresh and try again.';
+      }
+      
+      setOtpError(errorMessage);
+      toast.error(errorMessage);
+    } finally {
+      setIsSendingOtp(false);
+    }
+  };
+
+  const handleVerifyOtp = async () => {
+    if (!otp || otp.length !== 6) {
+      setOtpError('Please enter a valid 6-digit OTP');
+      return;
+    }
+
+    try {
+      if (confirmationResult) {
+        const result = await confirmationResult.confirm(otp);
+        // OTP verified successfully
+        setOtpVerified(true);
+        setOtpError('');
+        toast.success('Mobile number verified successfully!');
+      } else {
+        setOtpError('Please send OTP first');
+      }
+    } catch (error) {
+      console.error('Error verifying OTP:', error);
+      setOtpError('Invalid OTP. Please try again.');
+      toast.error('Invalid OTP. Please try again.');
+    }
   };
 
   const revealScratchCard = () => {
@@ -306,23 +468,83 @@ const handleConsultationSubmit = async (consultationData) => {
               </div>
               
               <div className="form-group">
-                <label htmlFor="phone">Mobile Number</label>
-                <i className="fas fa-phone"></i>
-                <input
-                  type="tel"
-                  id="phone"
-                  name="phone"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your mobile number"
-                  pattern="[0-9]{10}"
-                  title="Please enter a valid 10-digit mobile number"
-                />
+                <label>Mobile Number (with WhatsApp)</label>
+                <div className="mobile-input">
+                  <span className="country-code">+91</span>
+                  <input
+                    type="tel"
+                    value={mobile}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, '');
+                      if (value.length <= 10) {
+                        setMobile(value);
+                      }
+                    }}
+                    required
+                    placeholder="Enter 10-digit mobile number"
+                    disabled={otpVerified}
+                  />
+                </div>
+                {!otpVerified && mobile.length === 10 && (
+                  <button 
+                    type="button" 
+                    onClick={handleSendOtp} 
+                    className="otp-button"
+                    disabled={isSendingOtp || cooldown > 0}
+                    style={{marginTop: '10px', width: '100%'}}
+                  >
+                    {isSendingOtp ? 'Sending...' : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
+                  </button>
+                )}
               </div>
-              
+
+              {otpSent && !otpVerified && (
+                <div className="form-group">
+                  <label>Enter OTP</label>
+                  <div className="otp-verify">
+                    <input
+                      type="text"
+                      value={otp}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/\D/g, '');
+                        if (value.length <= 6) {
+                          setOtp(value);
+                        }
+                      }}
+                      placeholder="Enter 6-digit OTP"
+                      maxLength={6}
+                    />
+                    <button 
+                      type="button" 
+                      onClick={handleVerifyOtp}
+                      className="verify-button"
+                      disabled={otp.length !== 6}
+                    >
+                      Verify OTP
+                    </button>
+                  </div>
+                  <div className="resend-container">
+                    <button 
+                      type="button" 
+                      onClick={handleSendOtp}
+                      className="resend-button"
+                      disabled={cooldown > 0 || isSendingOtp}
+                    >
+                      {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
+                    </button>
+                  </div>
+                  {otpError && <div className="error-message">{otpError}</div>}
+                </div>
+              )}
+
+              {otpVerified && (
+                <div className="success-message">
+                  ✓ Mobile number verified
+                </div>
+              )}
+
               <div className="form-group">
-                <label htmlFor="className">Class</label>
+                <label htmlFor="className">Class/Grade</label>
                 <i className="fas fa-graduation-cap"></i>
                 <input
                   type="text"
@@ -335,14 +557,19 @@ const handleConsultationSubmit = async (consultationData) => {
                 />
               </div>
               
-              <div className="form-actions">
-                <button type="submit" className="submit-btn">
-                  View Results
-                </button>
-              </div>
+              <button 
+                type="submit" 
+                className="submit-button"
+                disabled={!otpVerified}
+              >
+                View Result
+              </button>
             </form>
           </div>
         </div>
+        
+        {/* Firebase reCAPTCHA container */}
+        <div id="recaptcha-container" style={{display: 'none'}}></div>
         
         <ToastContainer
           position="top-center"
@@ -521,6 +748,79 @@ const handleConsultationSubmit = async (consultationData) => {
   const currentQuestionNumber = (currentCategoryIndex * categories[0].questions.length) + currentQuestionIndex + 1;
   // Calculate progress percentage
   const progress = ((currentQuestionNumber / totalQuestions) * 100).toFixed(1);
+
+  // Show welcome message before starting the test
+  if (!testStarted) {
+    return (
+      <div className="welcome-container">
+        <h2>Confused, What to do after 12th?</h2>
+        <p className="welcome-text">
+          Take our free, 5-minute scientific aptitude test to discover the Course and Career that actually fits your personality.
+        </p>
+        
+        <button 
+          className="start-test-btn"
+          onClick={handleStartTest}
+          style={{marginTop: '2rem'}}
+        >
+          Start my Free Test &gt;
+        </button>
+        
+        <div className="faq-section">
+          <h3>Frequently Asked Questions</h3>
+          
+          {[
+            {
+              q: 'Is this like a school exam? Will it be hard?',
+              a: 'Not at all. There are zero math problems and zero general knowledge questions. It\'s just 24 simple "Yes or No" questions about what you like (e.g., "Do you like fixing things?" or "Do you like helping people?"). You can\'t fail this test!'
+            },
+            {
+              q: 'How is this different from the advice my relatives give me?',
+              a: 'Your relatives love you, but they might not know every modern career option. This test is based on the RIASEC Model, a global standard used by professional career counselors. It relies on data and psychology, not just opinions or trends.'
+            },
+            {
+              q: 'What exactly will I get after the test?',
+              a: 'You will instantly get a Personalized Career Profile that tells you:',
+              list: [
+                'Your Dominant Personality Type (e.g., Leader, Creator, Thinker).',
+                'The specific Bachelor\'s Courses (BBA, B.Tech, BA, etc.) that fit you best.',
+                'A list of career roles you would enjoy working in.'
+              ]
+            },
+            {
+              q: 'Do I have to pay for the results?',
+              a: 'The basic test and your Summary Result are 100% FREE. We believe every student deserves clarity about their future. If you want a detailed roadmap or college admission help later, you can book a 1-on-1 session with Sachin Sir.'
+            }
+          ].map((faq, index) => (
+            <div 
+              key={index} 
+              className={`faq-item ${openFaqIndex === index ? 'open' : ''}`}
+              onClick={() => toggleFaq(index)}
+            >
+              <div className="faq-question">
+                <h4>Q{index + 1}: {faq.q}</h4>
+                <span className="faq-toggle">
+                  {openFaqIndex === index ? '−' : '+'}
+                </span>
+              </div>
+              {openFaqIndex === index && (
+                <div className="faq-answer">
+                  <p><strong>A:</strong> {faq.a}</p>
+                  {faq.list && (
+                    <ul>
+                      {faq.list.map((item, i) => (
+                        <li key={i}>{item}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+              )}
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="aptitude-test-container">

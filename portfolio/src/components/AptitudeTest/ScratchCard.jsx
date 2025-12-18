@@ -253,20 +253,20 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
                 <FaGift className="gift-float gift-3" />
               </motion.div>
               
-              <h3>Congratulations! 🎉</h3>
-              <p>You've won a</p>
-              <h2 className="offer-text">FREE CONSULTATION</h2>
-              <p>session with our expert!</p>
+              <h3>Congratulations! 🎉🎉</h3>
+              
+              <h2 className="offer-text">1 - 1 Career Stratergy Session With Sachin Sir</h2>
+              <p>Value: ₹999 - Your Fee</p>
               
               <button 
                 className="claim-btn"
                 onClick={() => setShowForm(true)}
               >
-                Claim Your Free Session
+                Book My Slot Now
               </button>
               
               <div className="coupon-code">
-                <span>Limited Time Offer</span>
+                <span>🔥Only 3 Slots left for this week</span>
               </div>
             </div>
         <canvas
