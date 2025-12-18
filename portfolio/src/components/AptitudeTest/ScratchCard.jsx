@@ -61,12 +61,56 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
   useEffect(() => {
     if (canvas) {
       const context = canvas.getContext('2d');
-      context.fillStyle = '#FFD700';
+      
+      // Draw gradient background
+      const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+      gradient.addColorStop(0, '#ff9a9e');
+      gradient.addColorStop(1, '#fad0c4');
+      context.fillStyle = gradient;
       context.fillRect(0, 0, canvas.width, canvas.height);
-      context.fillStyle = '#000';
-      context.font = 'bold 16px Arial';
+      
+      // Add pattern overlay
+      context.fillStyle = 'rgba(255, 255, 255, 0.1)';
+      for (let i = 0; i < canvas.width; i += 20) {
+        for (let j = 0; j < canvas.height; j += 20) {
+          if ((i + j) % 40 === 0) {
+            context.fillRect(i, j, 10, 10);
+          }
+        }
+      }
+      
+      // Draw main text with improved contrast
+      context.save();
+      // Remove shadow for better clarity
+      context.shadowColor = 'transparent';
+      context.shadowBlur = 0;
+      context.shadowOffsetX = 0;
+      context.shadowOffsetY = 0;
+      
+      // Main text
+      context.font = 'bold 18px "Poppins", Arial, sans-serif';
       context.textAlign = 'center';
-      context.fillText('Scratch to reveal your gift!', canvas.width / 2, canvas.height / 2);
+      context.textBaseline = 'middle';
+      
+      // Text with solid color for better visibility
+      context.fillStyle = '#1a1a2e'; // Dark blue-gray for better contrast
+      
+      // Draw text with improved contrast
+      context.font = 'bold 20px "Poppins", Arial, sans-serif';
+      context.fillText('Scratch to claim your', canvas.width / 2, canvas.height / 2 - 10);
+      
+      // Draw reward text larger and bolder with better contrast
+      context.font = 'bold 26px "Poppins", Arial, sans-serif';
+      context.fillStyle = '#e63946'; // Bright red for emphasis
+      context.fillText('Merit Reward 🏆', canvas.width / 2, canvas.height / 2 + 30);
+      
+      // Add subtle sparkle effect
+      context.font = '16px Arial';
+      context.fillStyle = 'rgba(255, 255, 255, 0.8)';
+      context.fillText('✦   ✦   ✦', canvas.width / 2, canvas.height / 2 + 55);
+      
+      context.restore();
+      
       setCtx(context);
     }
   }, [canvas]);
