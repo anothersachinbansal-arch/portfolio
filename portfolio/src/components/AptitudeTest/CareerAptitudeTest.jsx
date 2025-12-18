@@ -763,7 +763,7 @@ const handleConsultationSubmit = async (consultationData) => {
           onClick={handleStartTest}
           style={{marginTop: '2rem'}}
         >
-          Start my Free Test &gt;
+          Start my Free Test 
         </button>
         
         <div className="faq-section">
