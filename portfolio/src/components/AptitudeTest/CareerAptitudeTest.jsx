@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { FaCheck, FaTimes, FaPrint, FaRedo, FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import ScratchCard from './ScratchCard';
@@ -112,8 +112,17 @@ const CareerAptitudeTest = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
-  const [recaptchaVerifierRef, setRecaptchaVerifierRef] = useState(null);
+  const recaptchaVerifierRef = useRef(null);
   const [cooldown, setCooldown] = useState(0);
+  
+  // Cleanup recaptcha verifier on unmount
+  useEffect(() => {
+    return () => {
+      if (recaptchaVerifierRef.current) {
+        recaptchaVerifierRef.current.clear();
+      }
+    };
+  }, []);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [testData, setTestData] = useState(null);
   const [showScratchCard, setShowScratchCard] = useState(false);
@@ -311,26 +320,50 @@ const CareerAptitudeTest = () => {
     }
     
     setIsSendingOtp(true);
+    setOtpError('');
     
     try {
-      // Clear any existing reCAPTCHA
-      const recaptchaContainer = document.getElementById('recaptcha-container');
-      if (recaptchaContainer) {
-        recaptchaContainer.innerHTML = '';
+      // Clear any existing reCAPTCHA verifier
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (e) {
+          console.log('Clearing previous recaptcha:', e);
+        }
       }
       
-      // Setup reCAPTCHA verifier
+      // Clear and replace the reCAPTCHA container
+      const recaptchaContainer = document.getElementById('recaptcha-container');
+      if (recaptchaContainer) {
+        const parent = recaptchaContainer.parentNode;
+        const newContainer = document.createElement('div');
+        newContainer.id = 'recaptcha-container';
+        newContainer.style.display = 'none';
+        parent.replaceChild(newContainer, recaptchaContainer);
+      }
+      
+      // Setup new reCAPTCHA verifier
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
-        'callback': (response) => {
+        'callback': () => {
           // reCAPTCHA solved
         },
         'expired-callback': () => {
           // Reset reCAPTCHA
+          if (recaptchaVerifierRef.current) {
+            try {
+              recaptchaVerifierRef.current.clear();
+              recaptchaVerifierRef.current = null;
+            } catch (e) {
+              console.log('Error in expired callback:', e);
+            }
+          }
         }
       });
       
-      setRecaptchaVerifierRef(verifier);
+      // Store verifier in ref
+      recaptchaVerifierRef.current = verifier;
       
       // Send OTP
       const phoneNumber = '+91' + mobile;
@@ -339,7 +372,6 @@ const CareerAptitudeTest = () => {
       setConfirmationResult(confirmation);
       setOtpSent(true);
       setOtpVerified(false);
-      setOtpError('');
       toast.success('OTP sent to +91' + mobile);
       
       // Start 30-second cooldown
@@ -364,10 +396,22 @@ const CareerAptitudeTest = () => {
         errorMessage = 'Too many requests. Please try again later.';
       } else if (error.code === 'auth/invalid-app-credential') {
         errorMessage = 'App verification failed. Please refresh and try again.';
+      } else if (error.code === 'auth/recaptcha-not-rendered') {
+        errorMessage = 'Security check failed. Please refresh the page and try again.';
       }
       
       setOtpError(errorMessage);
       toast.error(errorMessage);
+      
+      // Reset recaptcha on error
+      if (recaptchaVerifierRef.current) {
+        try {
+          recaptchaVerifierRef.current.clear();
+          recaptchaVerifierRef.current = null;
+        } catch (e) {
+          console.log('Error clearing recaptcha on error:', e);
+        }
+      }
     } finally {
       setIsSendingOtp(false);
     }
@@ -883,6 +927,7 @@ const handleConsultationSubmit = async (consultationData) => {
         draggable
         pauseOnHover
       />
+      <div id="recaptcha-container" style={{ display: 'none' }}></div>
     </div>
   );
 };
