@@ -135,7 +135,7 @@ app.post("/send-mail-careertest", async (req, res) => {
 
     await resend.emails.send({
       from: "Career Aptitude Test <onboarding@resend.dev>",
-      to: "kishan817835@gmail.com",
+      to: "anotherdimplekataria@gmail.com",
       subject: date && time 
         ? "Career Test + Consultation Booking" 
         : "Career Test Results",
