@@ -66,6 +66,7 @@ app.post("/send-mail", async (req, res) => {
     total,
     consultationDate,
     consultationTime,
+    results,
   } = req.body;
 
   try {
