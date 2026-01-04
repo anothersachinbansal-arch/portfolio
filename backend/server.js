@@ -104,7 +104,7 @@ app.post("/send-mail", async (req, res) => {
   }
 });
 app.post("/send-mail-result", async (req, res) => {
-  const { name, phone, className, score, total } = req.body;
+  const { name, phone, className, score, total, results } = req.body;
 
   try {
     // Email HTML content
@@ -114,6 +114,9 @@ app.post("/send-mail-result", async (req, res) => {
       <p><strong>Phone:</strong> ${phone}</p>
       <p><strong>Class:</strong> ${className}</p>
       <p><strong>Score:</strong> ${score}/${total}</p>
+      
+      <h3>Detailed Results:</h3>
+      <pre>${results}</pre>
     `;
 
     // Send email using Resend
