@@ -70,7 +70,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
         context.drawImage(img, 0, 0, canvas.width, canvas.height);
         
         // Add subtle overlay for better scratch effect
-        context.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        context.fillStyle = 'rgba(255, 255, 255, 0.15)';
         context.fillRect(0, 0, canvas.width, canvas.height);
         
         // Draw main text with improved contrast
@@ -139,7 +139,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     if (ctx) {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
-      ctx.arc(x, y, 15, 0, Math.PI * 2);
+      ctx.arc(x, y, 20, 0, Math.PI * 2);
       ctx.fill();
     }
   };
@@ -171,7 +171,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
         const cy = lastPoint.current.y + (y - lastPoint.current.y) * t;
         
         // Vary the brush size slightly for a more natural feel
-        const radius = 15 + Math.sin(Date.now() * 0.02) * 2;
+        const radius = 20 + Math.sin(Date.now() * 0.02) * 3;
         
         if (i === 0) {
           ctx.moveTo(cx + radius, cy);
@@ -184,7 +184,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
       }
       
       ctx.strokeStyle = 'rgba(0,0,0,1)';
-      ctx.lineWidth = 30; // Double the line width for better coverage
+      ctx.lineWidth = 40; // Increased line width for better coverage
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.stroke();
