@@ -299,7 +299,9 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
               
               <h3>Congratulations! 🎉🎉</h3>
               
-              <h2 className="offer-text">1 - 1 Career Stratergy Session With Sachin Sir</h2>
+              <h2 className="offer-text">You've won a
+1-on-1 Career Strategy Session
+with Sachin Sir!</h2>
               <p>Value: ₹999 - Your Fee</p>
               
               <button 

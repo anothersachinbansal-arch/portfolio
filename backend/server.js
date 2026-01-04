@@ -89,7 +89,7 @@ app.post("/send-mail", async (req, res) => {
 
     await resend.emails.send({
       from: "Aptitude Test <onboarding@resend.dev>",
-      to: "kishan817835@gmail.com",
+      to: "kishan.webmeen@gmail.com",
       subject:
         consultationDate && consultationTime
           ? "New Aptitude Test + Consultation Booking"
@@ -103,6 +103,34 @@ app.post("/send-mail", async (req, res) => {
     res.status(500).json({ success: false, error });
   }
 });
+app.post("/send-mail-result", async (req, res) => {
+  const { name, phone, className, score, total } = req.body;
+
+  try {
+    // Email HTML content
+    const emailContent = `
+      <h2>Aptitude Test Result</h2>
+      <p><strong>Name:</strong> ${name}</p>
+      <p><strong>Phone:</strong> ${phone}</p>
+      <p><strong>Class:</strong> ${className}</p>
+      <p><strong>Score:</strong> ${score}/${total}</p>
+    `;
+
+    // Send email using Resend
+    await resend.emails.send({
+      from: "Aptitude Test <onboarding@resend.dev>",
+      to: "kishan.webmeen@gmail.com", // Change to recipient
+      subject: "New Aptitude Test Submission",
+      html: emailContent,
+    });
+
+    res.json({ success: true, message: "Email sent successfully" });
+  } catch (error) {
+    console.error("Email Error:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 
 // Add this route before the error handling middleware
 app.post("/send-mail-careertest", async (req, res) => {
@@ -135,7 +163,7 @@ app.post("/send-mail-careertest", async (req, res) => {
 
     await resend.emails.send({
       from: "Career Aptitude Test <onboarding@resend.dev>",
-      to: "anotherdimplekataria@gmail.com",
+      to: "kishan817835@gmail.com",
       subject: date && time 
         ? "Career Test + Consultation Booking" 
         : "Career Test Results",

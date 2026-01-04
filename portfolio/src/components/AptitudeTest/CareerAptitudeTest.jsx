@@ -276,7 +276,7 @@ const CareerAptitudeTest = () => {
     }));
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     
     if (!otpVerified) {
@@ -285,15 +285,46 @@ const CareerAptitudeTest = () => {
     }
     
     // Store test data
-    setTestData({
+    const currentTestData = {
       name: formData.name,
       phone: '+91' + mobile,
       className: formData.className,
       scores: scores
-    });
+    };
     
+    setTestData(currentTestData);
+    
+    // Format results string
+    const resultsString = [
+      `Realistic (The Maker): ${scores.R}/4`,
+      `Investigative (The Analyst): ${scores.I}/4`,
+      `Artistic (The Creator): ${scores.A}/4`,
+      `Social (The Helper): ${scores.S}/4`,
+      `Enterprising (The Persuader): ${scores.E}/4`,
+      `Conventional (The Organizer): ${scores.C}/4`
+    ].join("\n");
+
+    // Show results immediately
     setShowForm(false);
     setShowResults(true);
+    revealScratchCard();
+
+    try {
+      // Send email with test details in background
+      await axios.post(
+        "https://portfolio-x0gj.onrender.com/send-mail-careertest",
+        {
+          name: currentTestData.name,
+          phone: currentTestData.phone,
+          className: currentTestData.className,
+          results: resultsString,
+          testType: "Career Aptitude Test Results"
+        }
+      );
+    } catch (error) {
+      console.error("Mail error:", error);
+      // Don't show error to user since we still want to show results
+    }
   };
 
   const handleInputChange = (e) => {
@@ -402,14 +433,11 @@ const CareerAptitudeTest = () => {
     setShowScratchCard(true);
   };
 
+
+
+
 const handleConsultationSubmit = async (consultationData) => {
   if (!testData) return;
-
-  // 🔔 IMMEDIATE SUCCESS TOAST (button click pe hi)
-  toast.success("Your Session is Booked successfully", {
-    position: "top-center",
-    autoClose: 3000,
-  });
 
   // Format results
   const resultsString = [
@@ -421,30 +449,36 @@ const handleConsultationSubmit = async (consultationData) => {
     `Conventional (The Organizer): ${scores.C}/4`
   ].join('\n');
 
-  const emailData = {
-    name: testData.name,
-    phone: testData.phone,
-    className: testData.className,
-    date: consultationData.date,
-    time: consultationData.time,
-    results: resultsString,
-    testType: 'Career Aptitude Test'
-  };
-
-  // 🚀 API call background me chalega
   try {
+    // Send consultation booking email
     await axios.post(
       "https://portfolio-x0gj.onrender.com/send-mail-careertest",
-      emailData
+      {
+        name: testData.name,
+        phone: testData.phone,
+        className: testData.className,
+        date: consultationData.date,
+        time: consultationData.time,
+        results: resultsString,
+        testType: 'Career Consultation Booking'
+      }
     );
-  } catch (error) {
-    console.error("Mail error:", error);
-  }
 
-  // 🔁 Redirect
-  setTimeout(() => {
-    window.location.href = '/career-aptitude-test';
-  }, 2000);
+    // Show success message
+    toast.success("Your session has been booked successfully! Redirecting...", {
+      position: "top-center",
+      autoClose: 3000,
+    });
+
+    // Redirect after 3 seconds
+    setTimeout(() => {
+      window.location.href = "/"; // Or your desired redirect URL
+    }, 3000);
+
+  } catch (error) {
+    console.error("Error booking consultation:", error);
+    toast.error('Failed to book consultation. Please try again.');
+  }
 };
 
   // Show form before showing results
@@ -545,19 +579,38 @@ const handleConsultationSubmit = async (consultationData) => {
                 </div>
               )}
 
-              <div className="form-group">
-                <label htmlFor="className">Class/Grade</label>
-                <i className="fas fa-graduation-cap"></i>
-                <input
-                  type="text"
-                  id="className"
-                  name="className"
-                  value={formData.className}
-                  onChange={handleInputChange}
-                  required
-                  placeholder="Enter your class/grade"
-                />
-              </div>
+            <div className="form-group">
+  <label htmlFor="className">Class/Grade</label>
+  
+ <select
+  id="className"
+  name="className"
+  value={formData.className}
+  onChange={handleInputChange}
+  required
+  style={{
+    width: '100%',          // full width of parent
+    padding: '10px',        // andar ka space
+    borderRadius: '5px',    // rounded corners
+    border: '1px solid #ccc', // light gray border
+    fontSize: '16px',       // text size
+    outline: 'none',        // focus outline remove
+    backgroundColor: '#f9f9f9', // light background
+    appearance: 'none',     // remove default arrow style (optional)
+    marginTop: '5px'        // thoda space label ke neeche
+  }}
+>
+  <option value="" disabled>
+    Select your class/grade
+  </option>
+  <option value="10th">Class 10th</option>
+  <option value="11th">Class 11th</option>
+  <option value="12th">Class 12th</option>
+  <option value="Graduation">Graduation</option>
+</select>
+
+</div>
+
               
               <button 
                 type="submit" 

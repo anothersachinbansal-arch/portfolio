@@ -108,7 +108,7 @@ const Navbar = () => {
             </button>
             <Link to="/career-aptitude-test" className="navbar-item" onClick={() => setIsMenuOpen(false)}>
               <i className="fas fa-briefcase"></i>
-              <span>CAREER TEST</span>
+              <span>APTITUDE TEST</span>
             </Link>
 
             <div className="login-button">
