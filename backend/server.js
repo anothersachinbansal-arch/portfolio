@@ -75,6 +75,9 @@ app.post("/send-mail", async (req, res) => {
       <p><strong>Phone:</strong> ${phone}</p>
       <p><strong>Class:</strong> ${className}</p>
       <p><strong>Score:</strong> ${score}/${total}</p>
+      
+      <h3>Detailed Results:</h3>
+      <pre>${results}</pre>
 
       ${
         consultationDate && consultationTime

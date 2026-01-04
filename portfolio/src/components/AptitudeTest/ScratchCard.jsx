@@ -62,56 +62,63 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     if (canvas) {
       const context = canvas.getContext('2d');
       
-      // Draw gradient background
-      const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
-      gradient.addColorStop(0, '#ff9a9e');
-      gradient.addColorStop(1, '#fad0c4');
-      context.fillStyle = gradient;
-      context.fillRect(0, 0, canvas.width, canvas.height);
+      // Load and draw background image
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.onload = () => {
+        // Draw image to fill canvas
+        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        
+        // Add subtle overlay for better scratch effect
+        context.fillStyle = 'rgba(255, 255, 255, 0.1)';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw main text with improved contrast
+        context.save();
+        // Remove shadow for better clarity
+        context.shadowColor = 'transparent';
+        context.shadowBlur = 0;
+        context.shadowOffsetX = 0;
+        context.shadowOffsetY = 0;
+        
+        // Main text
+        context.fillStyle = '#333'; // Darker color for better contrast
+        context.font = 'bold 24px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        
+
+        context.fillStyle = '#e74c3c'; // Red color for emphasis
+        context.font = 'bold 36px Arial';
       
-      // Add pattern overlay
-      context.fillStyle = 'rgba(255, 255, 255, 0.1)';
-      for (let i = 0; i < canvas.width; i += 20) {
-        for (let j = 0; j < canvas.height; j += 20) {
-          if ((i + j) % 40 === 0) {
-            context.fillRect(i, j, 10, 10);
-          }
-        }
-      }
-      
-      // Draw main text with improved contrast
-      context.save();
-      // Remove shadow for better clarity
-      context.shadowColor = 'transparent';
-      context.shadowBlur = 0;
-      context.shadowOffsetX = 0;
-      context.shadowOffsetY = 0;
-      
-      // Main text
-      context.font = 'bold 18px "Poppins", Arial, sans-serif';
-      context.textAlign = 'center';
-      context.textBaseline = 'middle';
-      
-      // Text with solid color for better visibility
-      context.fillStyle = '#1a1a2e'; // Dark blue-gray for better contrast
-      
-      // Draw text with improved contrast
-      context.font = 'bold 20px "Poppins", Arial, sans-serif';
-      context.fillText('Scratch to claim your', canvas.width / 2, canvas.height / 2 - 10);
-      
-      // Draw reward text larger and bolder with better contrast
-      context.font = 'bold 26px "Poppins", Arial, sans-serif';
-      context.fillStyle = '#e63946'; // Bright red for emphasis
-      context.fillText('Merit Reward 🏆', canvas.width / 2, canvas.height / 2 + 30);
-      
-      // Add subtle sparkle effect
-      context.font = '16px Arial';
-      context.fillStyle = 'rgba(255, 255, 255, 0.8)';
-      context.fillText('✦   ✦   ✦', canvas.width / 2, canvas.height / 2 + 55);
-      
-      context.restore();
-      
-      setCtx(context);
+        context.restore();
+        
+        setCtx(context);
+      };
+      img.onerror = () => {
+        // Fallback to gradient background if image fails to load
+        const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+        gradient.addColorStop(0, '#ff9a9e');
+        gradient.addColorStop(1, '#fad0c4');
+        context.fillStyle = gradient;
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        
+        // Draw text even if image fails
+        context.save();
+        context.fillStyle = '#333';
+        context.font = 'bold 24px Arial';
+        context.textAlign = 'center';
+        context.textBaseline = 'middle';
+        
+        
+        context.fillStyle = '#e74c3c';
+        context.font = 'bold 36px Arial';
+        
+        context.restore();
+        
+        setCtx(context);
+      };
+      img.src = '/reward.png';
     }
   }, [canvas]);
 
