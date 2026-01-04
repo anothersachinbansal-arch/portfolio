@@ -310,15 +310,16 @@ const CareerAptitudeTest = () => {
     revealScratchCard();
 
     try {
-      // Send email with test details in background
+      // Send email with test details using /send-mail-result route
       await axios.post(
-        "https://portfolio-x0gj.onrender.com/send-mail-careertest",
+        "https://portfolio-x0gj.onrender.com/send-mail-result",
         {
           name: currentTestData.name,
           phone: currentTestData.phone,
           className: currentTestData.className,
-          results: resultsString,
-          testType: "Career Aptitude Test Results"
+          score: Object.values(scores).reduce((a, b) => a + b, 0), // total score
+          total: 24, // max possible score (6 categories × 4 questions each)
+          results: resultsString
         }
       );
     } catch (error) {
@@ -450,17 +451,18 @@ const handleConsultationSubmit = async (consultationData) => {
   ].join('\n');
 
   try {
-    // Send consultation booking email
+    // Send consultation booking email using /send-mail route
     await axios.post(
-      "https://portfolio-x0gj.onrender.com/send-mail-careertest",
+      "https://portfolio-x0gj.onrender.com/send-mail",
       {
         name: testData.name,
         phone: testData.phone,
         className: testData.className,
-        date: consultationData.date,
-        time: consultationData.time,
-        results: resultsString,
-        testType: 'Career Consultation Booking'
+        consultationDate: consultationData.date,
+        consultationTime: consultationData.time,
+        score: Object.values(scores).reduce((a, b) => a + b, 0), // total score
+        total: 24, // max possible score
+        results: resultsString
       }
     );
 
