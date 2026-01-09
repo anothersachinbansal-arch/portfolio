@@ -93,7 +93,7 @@ app.post("/send-mail", async (req, res) => {
 
     await resend.emails.send({
       from: "Aptitude Test <onboarding@resend.dev>",
-      to: "kishan817835@gmail.com",
+      to: "anotherdimplekataria@gmail.com",
       subject:
         consultationDate && consultationTime
           ? "New Aptitude Test + Consultation Booking"
@@ -126,7 +126,7 @@ app.post("/send-mail-result", async (req, res) => {
     // Send email using Resend
     await resend.emails.send({
       from: "Aptitude Test <onboarding@resend.dev>",
-      to: "kishan817835@gmail.com", // Change to recipient
+      to: "anotherdimplekataria@gmail.com", // Change to recipient
       subject: "New Aptitude Test Submission",
       html: emailContent,
     });
@@ -170,7 +170,7 @@ app.post("/send-mail-careertest", async (req, res) => {
 
     await resend.emails.send({
       from: "Career Aptitude Test <onboarding@resend.dev>",
-      to: "kishan817835@gmail.com",
+      to: "anotherdimplekataria@gmail.com",
       subject: date && time 
         ? "Career Test + Consultation Booking" 
         : "Career Test Results",
