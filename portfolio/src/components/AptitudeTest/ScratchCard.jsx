@@ -62,16 +62,27 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     if (canvas) {
       const context = canvas.getContext('2d');
       
+      // Set canvas size for high quality
+      const dpr = window.devicePixelRatio || 1;
+      const rect = canvas.getBoundingClientRect();
+      
+      // Set actual canvas size accounting for device pixel ratio
+      canvas.width = rect.width * dpr;
+      canvas.height = rect.height * dpr;
+      
+      // Scale the context to match device pixel ratio
+      context.scale(dpr, dpr);
+      
       // Load and draw background image
       const img = new Image();
       img.crossOrigin = 'anonymous';
       img.onload = () => {
-        // Draw image to fill canvas
-        context.drawImage(img, 0, 0, canvas.width, canvas.height);
+        // Draw image to fill canvas (using logical dimensions)
+        context.drawImage(img, 0, 0, rect.width, rect.height);
         
         // Add subtle overlay for better scratch effect
         context.fillStyle = 'rgba(255, 255, 255, 0.15)';
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillRect(0, 0, rect.width, rect.height);
         
         // Draw main text with improved contrast
         context.save();
@@ -97,11 +108,11 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
       };
       img.onerror = () => {
         // Fallback to gradient background if image fails to load
-        const gradient = context.createLinearGradient(0, 0, canvas.width, canvas.height);
+        const gradient = context.createLinearGradient(0, 0, rect.width, rect.height);
         gradient.addColorStop(0, '#ff9a9e');
         gradient.addColorStop(1, '#fad0c4');
         context.fillStyle = gradient;
-        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.fillRect(0, 0, rect.width, rect.height);
         
         // Draw text even if image fails
         context.save();
@@ -128,8 +139,9 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
 
   const startScratching = (e) => {
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const dpr = window.devicePixelRatio || 1;
+    const x = ((e.clientX || e.touches[0].clientX) - rect.left) * dpr;
+    const y = ((e.clientY || e.touches[0].clientY) - rect.top) * dpr;
     
     lastPoint.current = { x, y };
     isDrawing.current = true;
@@ -139,7 +151,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     if (ctx) {
       ctx.globalCompositeOperation = 'destination-out';
       ctx.beginPath();
-      ctx.arc(x, y, 20, 0, Math.PI * 2);
+      ctx.arc(x, y, 20 * dpr, 0, Math.PI * 2);
       ctx.fill();
     }
   };
@@ -148,8 +160,9 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     if (!isScratching || !isDrawing.current) return;
     
     const rect = canvas.getBoundingClientRect();
-    const x = (e.clientX || e.touches[0].clientX) - rect.left;
-    const y = (e.clientY || e.touches[0].clientY) - rect.top;
+    const dpr = window.devicePixelRatio || 1;
+    const x = ((e.clientX || e.touches[0].clientX) - rect.left) * dpr;
+    const y = ((e.clientY || e.touches[0].clientY) - rect.top) * dpr;
 
     if (ctx) {
       // Draw a line from last point to current point for smoother scratching
@@ -164,14 +177,14 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
       );
       
       // Draw multiple circles along the line for smoother effect
-      const steps = Math.max(2, Math.ceil(distance / 5));
+      const steps = Math.max(2, Math.ceil(distance / (5 * dpr)));
       for (let i = 0; i <= steps; i++) {
         const t = i / steps;
         const cx = lastPoint.current.x + (x - lastPoint.current.x) * t;
         const cy = lastPoint.current.y + (y - lastPoint.current.y) * t;
         
         // Vary the brush size slightly for a more natural feel
-        const radius = 20 + Math.sin(Date.now() * 0.02) * 3;
+        const radius = (20 * dpr) + Math.sin(Date.now() * 0.02) * (3 * dpr);
         
         if (i === 0) {
           ctx.moveTo(cx + radius, cy);
@@ -184,7 +197,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
       }
       
       ctx.strokeStyle = 'rgba(0,0,0,1)';
-      ctx.lineWidth = 40; // Increased line width for better coverage
+      ctx.lineWidth = 40 * dpr; // Increased line width for better coverage
       ctx.lineCap = 'round';
       ctx.lineJoin = 'round';
       ctx.stroke();
@@ -324,8 +337,11 @@ with Sachin Sir!</h2>
             </div>
         <canvas
           ref={setCanvas}
-          width={300}
-          height={200}
+          style={{ 
+            touchAction: 'none',
+            width: '100%',
+            height: '100%'
+          }}
           onMouseDown={startScratching}
           onMouseMove={scratch}
           onMouseUp={endScratching}
@@ -335,7 +351,6 @@ with Sachin Sir!</h2>
           onTouchEnd={handleTouchEnd}
           onTouchCancel={endScratching}
           className={isRevealed ? 'scratched' : ''}
-          style={{ touchAction: 'none' }}
         />
           </div>
           
