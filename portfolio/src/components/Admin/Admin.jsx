@@ -492,33 +492,6 @@ const AdminDashboard = () => {
             Manage Achievements
           </button>
           <button
-            className={`sidebar-btn ${view === 'questions' ? 'active' : ''}`}
-            onClick={() => {
-              setView('questions');
-            }}
-          >
-            Manage Questions
-          </button>
-          <button
-            className={`sidebar-btn ${view === 'add-question' ? 'active' : ''}`}
-            onClick={() => {
-              setEditingQuestion(null);
-              setQuestionForm({
-                question: '',
-                options: [
-                  { id: 'a', text: '' },
-                  { id: 'b', text: '' },
-                  { id: 'c', text: '' },
-                  { id: 'd', text: '' }
-                ],
-                correctAnswer: 'a'
-              });
-              setView('add-question');
-            }}
-          >
-            Add Question
-          </button>
-          <button
             className={`sidebar-btn ${view === 'youtube' ? 'active' : ''}`}
             onClick={() => {
               setView('youtube');
