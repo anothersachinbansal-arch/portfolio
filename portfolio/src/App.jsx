@@ -5,6 +5,7 @@ import Login from './components/Login/Login'
 import Hero from './components/Hero/Hero'
 import AboutHero from './components/About/AboutHero'
 import SuccessStories from './components/Achievements/SuccessStories'
+import YouTubeVideos from './components/YouTubeVideos/YouTubeVideos'
 import AllAchievers from './components/Achievements/AllAchievers'
 import Testimonials from './components/Testimonals/Testimonials'
 import WriteReview from './components/Testimonals/WriteReview'
@@ -13,6 +14,7 @@ import { ReviewsProvider } from './components/context/ReviewsContext'
 
 import Footer from './components/Footer/Footer'
 import Admin from './components/Admin/Admin'
+import AdminPanel from './components/AdminPanel/AdminPanel'
 import RequireAuth from './components/Auth/RequireAuth'
 import AptitudeTest from './components/AptitudeTest/AptitudeTest'
 import CareerAptitudeTest from './components/AptitudeTest/CareerAptitudeTest'
@@ -30,6 +32,7 @@ function App() {
               <AboutHero />
               <SuccessStories />
               <Testimonials />
+              <YouTubeVideos />
               
               <Footer />
             </>} />
@@ -38,6 +41,7 @@ function App() {
             <Route path="/writereview" element={<WriteReview />} />
             <Route path="/allreviews" element={<AllReviews />} />
             <Route path="/admin" element={<RequireAuth><Admin /></RequireAuth>} />
+            <Route path="/admin-panel" element={<RequireAuth><AdminPanel /></RequireAuth>} />
             <Route path="/aptitude-test" element={<AptitudeTest />} />
             <Route path="/career-aptitude-test" element={<CareerAptitudeTest />} />
             </Routes>

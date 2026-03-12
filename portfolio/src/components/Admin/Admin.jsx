@@ -9,7 +9,8 @@ const AdminDashboard = () => {
   const { reviews, deleteReview, addAchievement } = useReviews();
   const [achievers, setAchievers] = useState([]);
   const [questions, setQuestions] = useState([]);
-  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question'
+  const [youtubeVideos, setYoutubeVideos] = useState([]);
+  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question' | 'youtube' | 'add-youtube'
   const [view, setView] = useState('reviews');
   const [filteredReviews, setFilteredReviews] = useState(reviews);
   const [filters, setFilters] = useState({
@@ -23,6 +24,10 @@ const AdminDashboard = () => {
   });
   const [showAchievementForm, setShowAchievementForm] = useState(false);
   const [notification, setNotification] = useState('');
+  const [youtubeForm, setYoutubeForm] = useState({
+    url: '',
+    title: ''
+  });
   const [questionForm, setQuestionForm] = useState({
     question: '',
     options: [
@@ -49,6 +54,22 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     fetchQuestions();
+  }, []);
+
+  // Fetch YouTube videos from API
+  const fetchYoutubeVideos = async () => {
+    try {
+      const response = await axios.get('https://portfolio-x0gj.onrender.com/api/youtube-videos');
+      if (response.data.success) {
+        setYoutubeVideos(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching YouTube videos:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchYoutubeVideos();
   }, []);
 
   // Apply filters whenever reviews or filters change
@@ -104,7 +125,7 @@ const AdminDashboard = () => {
   const handleDeleteAchiever = async (id) => {
     if (!window.confirm('Delete this achiever image?')) return;
     try {
-      await axios.delete(`${"https://portfolio-x0gj.onrender.com/api/achievers"}/${id}`);
+      await axios.delete(`https://portfolio-x0gj.onrender.com/api/achievers/${id}`);
       setAchievers((prev) => prev.filter((a) => a._id !== id));
       showNotification('Achievement deleted');
     } catch (e) {
@@ -118,7 +139,7 @@ const AdminDashboard = () => {
     const fd = new FormData();
     fd.append('image', file);
     try {
-      const res = await axios.patch(`${"https://portfolio-x0gj.onrender.com/api/achievers"}/${id}`, fd, {
+      const res = await axios.patch(`https://portfolio-x0gj.onrender.com/api/achievers/${id}`, fd, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setAchievers((prev) => prev.map((a) => (a._id === id ? res.data : a)));
@@ -267,12 +288,94 @@ const AdminDashboard = () => {
     }
   };
 
+  // YouTube video management functions
+  const extractVideoId = (url) => {
+    const regex = /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/;
+    const match = url.match(regex);
+    return match ? match[1] : null;
+  };
+
+  const getThumbnailUrl = (videoId) => {
+    return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+  };
+
+  const handleYoutubeSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!youtubeForm.url.trim()) {
+      alert('Please enter a YouTube URL');
+      return;
+    }
+
+    const videoId = extractVideoId(youtubeForm.url);
+    if (!videoId) {
+      alert('Invalid YouTube URL');
+      return;
+    }
+
+    try {
+      const videoData = {
+        url: youtubeForm.url.trim(),
+        title: youtubeForm.title.trim() || 'YouTube Video',
+        videoId: videoId,
+        thumbnail: getThumbnailUrl(videoId)
+      };
+
+      const response = await axios.post('https://portfolio-x0gj.onrender.com/api/youtube-videos', videoData);
+      
+      console.log('YouTube Add Response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      
+      if (response.data.success || response.status === 201) {
+        setYoutubeForm({ url: '', title: '' });
+        fetchYoutubeVideos();
+        showNotification('YouTube video added successfully');
+        setView('youtube');
+      } else {
+        alert('Failed to add YouTube video');
+      }
+    } catch (error) {
+      console.error('Error adding YouTube video:', error);
+      alert('Failed to add YouTube video');
+    }
+  };
+
+  const handleDeleteYoutubeVideo = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this YouTube video?')) return;
+    
+    try {
+      const response = await axios.delete(`https://portfolio-x0gj.onrender.com/api/youtube-videos/${id}`);
+      
+      console.log('YouTube Delete Response:', response);
+      console.log('Response data:', response.data);
+      console.log('Response status:', response.status);
+      
+      if (response.data.success || response.status === 200) {
+        setYoutubeVideos(prev => prev.filter(video => video._id !== id));
+        showNotification('YouTube video deleted successfully');
+      } else {
+        alert('Failed to delete YouTube video');
+      }
+    } catch (error) {
+      console.error('Error deleting YouTube video:', error);
+      alert('Failed to delete YouTube video');
+    }
+  };
+
+  const handleYoutubeChange = (e) => {
+    const { name, value } = e.target;
+    setYoutubeForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
   const showNotification = (message) => {
     setNotification(message);
     setTimeout(() => setNotification(''), 3000);
   };
 
-  // Question management functions
   const handleQuestionSubmit = async (e) => {
     e.preventDefault();
     try {
@@ -414,6 +517,24 @@ const AdminDashboard = () => {
             }}
           >
             Add Question
+          </button>
+          <button
+            className={`sidebar-btn ${view === 'youtube' ? 'active' : ''}`}
+            onClick={() => {
+              setView('youtube');
+            }}
+            style={{ marginBottom: '8px' }}
+          >
+            Manage YouTube Videos
+          </button>
+          <button
+            className={`sidebar-btn ${view === 'add-youtube' ? 'active' : ''}`}
+            onClick={() => {
+              setYoutubeForm({ url: '', title: '' });
+              setView('add-youtube');
+            }}
+          >
+            Add YouTube Video
           </button>
 
           <div className="stats">
@@ -679,6 +800,89 @@ const AdminDashboard = () => {
                   </button>
                   <button type="submit" className="btn-primary">
                     {editingQuestion ? 'Update Question' : 'Add Question'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          ) : view === 'youtube' ? (
+            <div className="youtube-admin">
+              <h2>Manage YouTube Videos</h2>
+              {youtubeVideos.length === 0 ? (
+                <div className="no-results">
+                  <p>No YouTube videos added yet</p>
+                  <button 
+                    className="btn-primary" 
+                    onClick={() => setView('add-youtube')}
+                    style={{ marginTop: '1rem' }}
+                  >
+                    Add First Video
+                  </button>
+                </div>
+              ) : (
+                <div className="youtube-videos-grid">
+                  {youtubeVideos.map((video) => (
+                    <div key={video._id} className="youtube-video-card">
+                      <div className="video-thumbnail">
+                        <img 
+                          src={video.thumbnail} 
+                          alt={video.title}
+                          loading="lazy"
+                        />
+                        <div className="video-overlay">
+                          <i className="fab fa-youtube"></i>
+                        </div>
+                      </div>
+                      <div className="video-details">
+                        <h4>{video.title}</h4>
+                        <p className="video-url">{video.url}</p>
+                        <p className="added-date">
+                          Added: {new Date(video.createdAt).toLocaleDateString()}
+                        </p>
+                        <button 
+                          className="btn-delete"
+                          onClick={() => handleDeleteYoutubeVideo(video._id)}
+                        >
+                          <i className="fas fa-trash"></i> Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : view === 'add-youtube' ? (
+            <div className="youtube-form-section">
+              <h2>Add New YouTube Video</h2>
+              <form onSubmit={handleYoutubeSubmit} className="youtube-form">
+                <div className="form-group">
+                  <label htmlFor="youtube-url">YouTube URL:</label>
+                  <input
+                    type="url"
+                    id="youtube-url"
+                    name="url"
+                    value={youtubeForm.url}
+                    onChange={handleYoutubeChange}
+                    placeholder="https://www.youtube.com/watch?v=..."
+                    required
+                  />
+                </div>
+                <div className="form-group">
+                  <label htmlFor="youtube-title">Video Title (Optional):</label>
+                  <input
+                    type="text"
+                    id="youtube-title"
+                    name="title"
+                    value={youtubeForm.title}
+                    onChange={handleYoutubeChange}
+                    placeholder="Enter video title"
+                  />
+                </div>
+                <div className="form-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setView('youtube')}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Add YouTube Video
                   </button>
                 </div>
               </form>

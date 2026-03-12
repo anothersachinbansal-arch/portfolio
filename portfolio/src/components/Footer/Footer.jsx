@@ -3,7 +3,19 @@ import "./Footer.css";
 
 const Footer = () => {
   return (
-    <footer id="contact" className="footer" role="contentinfo">
+    <>
+      {/* WhatsApp Floating Button */}
+      <a
+        href="https://wa.me/919876543210"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="whatsapp-float"
+        aria-label="Contact on WhatsApp"
+      >
+        <img src="/whatsapp-con.png" alt="WhatsApp" className="whatsapp-icon" />
+      </a>
+
+      <footer id="contact" className="footer" role="contentinfo">
       <div className="footer-container">
         {/* Left Image (Clickable) */}
         <div className="footer-image">
@@ -82,6 +94,7 @@ const Footer = () => {
         <p>© {new Date().getFullYear()} Sachin Bansal. All Rights Reserved.</p><span>website Designed and Developed By <a href="https://upsoma.in" style={{textDecoration:'none',fontSize:'18px',fontWeight:600,color:'#16a34a'}}>Upsoma Consultany</a> </span>
       </div>
     </footer>
+    </>
   );
 };
 
