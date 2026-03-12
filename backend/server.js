@@ -9,6 +9,7 @@ import adminRoutes from "./routes/adminRoutes.js";
 import achieverRoutes from "./routes/achieverRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
+import youtubeRoutes from "./routes/youtubeRoutes.js";
 import { Resend } from "resend";
 
 // Load env
@@ -19,6 +20,7 @@ const resend = new Resend(process.env.RESEND_API);
 
 // Load Models
 import "./models/Question.js";
+import "./models/YouTubeVideo.js";
 
 const app = express();
 
@@ -53,6 +55,7 @@ app.use("/api/admin", adminRoutes);
 app.use("/api/achievers", achieverRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/questions", questionRoutes);
+app.use("/api/youtube-videos", youtubeRoutes);
 
 // ===============================
 // Send Mail Route (Resend)
