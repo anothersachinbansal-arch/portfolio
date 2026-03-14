@@ -357,7 +357,7 @@ const CareerAptitudeTest = () => {
       const verifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
         'size': 'invisible',
         'callback': (response) => {
-          // reCAPTCHA solved
+         
         },
         'expired-callback': () => {
           // Reset reCAPTCHA
@@ -389,6 +389,7 @@ const CareerAptitudeTest = () => {
       }, 1000);
       
     } catch (error) {
+      console.error('Error sending OTP:', error);
       console.error('Error sending OTP:', error);
       let errorMessage = 'Failed to send OTP. Please try again.';
       
