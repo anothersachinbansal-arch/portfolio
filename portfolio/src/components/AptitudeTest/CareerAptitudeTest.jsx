@@ -317,6 +317,10 @@ const CareerAptitudeTest = () => {
 
   const setupRecaptcha = async () => {
     try {
+      console.log("=== RECAPTCHA SETUP START ===");
+      console.log("User Agent:", navigator.userAgent);
+      console.log("Mobile detected:", /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
+      
       // Clear existing recaptcha verifier if it exists
       if (window.recaptchaVerifier) {
         console.log("Clearing existing reCAPTCHA verifier");
@@ -328,82 +332,32 @@ const CareerAptitudeTest = () => {
         window.recaptchaVerifier = null;
       }
 
-      // Clear the container completely
+      // Clear container completely
       const container = document.getElementById('recaptcha-container');
       if (container) {
         container.innerHTML = '';
-        // Start with invisible, will change to visible if needed
-        container.style.display = 'none';
-      }
-
-      // Wait for cleanup to complete
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Try invisible reCAPTCHA first (for desktop/better mobile browsers)
-      console.log("Creating invisible reCAPTCHA verifier");
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          badge: "bottomright",
-          theme: "light",
-          callback: (response) => {
-            console.log("Invisible reCAPTCHA solved successfully:", response);
-          },
-          'expired-callback': () => {
-            console.error("Invisible reCAPTCHA expired");
-            toast.error("reCAPTCHA expired. Please try again.");
-            // Clean up on expiry
-            if (window.recaptchaVerifier) {
-              try {
-                window.recaptchaVerifier.clear();
-              } catch (e) {
-                console.warn("Error clearing expired reCAPTCHA:", e);
-              }
-              window.recaptchaVerifier = null;
-            }
-          }
-        }
-      );
-      
-      // Try to render invisible reCAPTCHA
-      try {
-        await window.recaptchaVerifier.render();
-        console.log("Invisible reCAPTCHA rendered successfully");
-        
-        // Additional wait for mobile compatibility
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-      } catch (renderError) {
-        console.warn("Invisible reCAPTCHA failed, switching to visible reCAPTCHA");
-        
-        // Clean up failed invisible reCAPTCHA
-        if (window.recaptchaVerifier) {
-          try {
-            await window.recaptchaVerifier.clear();
-          } catch (e) {
-            console.warn("Error clearing failed invisible reCAPTCHA:", e);
-          }
-          window.recaptchaVerifier = null;
-        }
-
-        // Show refresh alert for problematic devices
-        toast.error("reCAPTCHA initialization failed. Please refresh the page and try again.", {
-          position: "top-center",
-          autoClose: 5000,
-        });
-
-        // Fallback to visible reCAPTCHA
-        console.log("Creating visible reCAPTCHA verifier as fallback");
-        
-        // Show container for visible reCAPTCHA
-        if (container) {
+        // For mobile browsers, always show visible reCAPTCHA for reliability
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (isMobile) {
           container.style.display = 'block';
           container.style.textAlign = 'center';
           container.style.margin = '10px 0';
+          console.log("Mobile detected - using visible reCAPTCHA");
+        } else {
+          container.style.display = 'none';
+          console.log("Desktop detected - using invisible reCAPTCHA");
         }
+      }
 
+      // Wait for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 300));
+
+      // Choose reCAPTCHA type based on device
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isMobile) {
+        // Use visible reCAPTCHA for mobile browsers (more reliable)
+        console.log("Creating visible reCAPTCHA verifier for mobile");
         window.recaptchaVerifier = new RecaptchaVerifier(
           auth,
           "recaptcha-container",
@@ -411,40 +365,98 @@ const CareerAptitudeTest = () => {
             size: "normal",
             theme: "light",
             callback: (response) => {
-              console.log("Visible reCAPTCHA solved successfully:", response);
+              console.log("Mobile visible reCAPTCHA solved successfully:", response);
               toast.success("reCAPTCHA verified! Sending OTP...");
             },
             'expired-callback': () => {
-              console.error("Visible reCAPTCHA expired");
+              console.error("Mobile visible reCAPTCHA expired");
               toast.error("reCAPTCHA expired. Please try again.");
               // Clean up on expiry
               if (window.recaptchaVerifier) {
                 try {
                   window.recaptchaVerifier.clear();
                 } catch (e) {
-                  console.warn("Error clearing expired visible reCAPTCHA:", e);
+                  console.warn("Error clearing expired mobile reCAPTCHA:", e);
                 }
                 window.recaptchaVerifier = null;
               }
             }
           }
         );
-
-        // Render visible reCAPTCHA
-        await window.recaptchaVerifier.render();
-        console.log("Visible reCAPTCHA rendered successfully");
-        
-        // Wait for visible reCAPTCHA to be ready
-        await new Promise(resolve => setTimeout(resolve, 500));
+      } else {
+        // Use invisible reCAPTCHA for desktop browsers
+        console.log("Creating invisible reCAPTCHA verifier for desktop");
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "invisible",
+            badge: "bottomright",
+            theme: "light",
+            callback: (response) => {
+              console.log("Desktop invisible reCAPTCHA solved successfully:", response);
+            },
+            'expired-callback': () => {
+              console.error("Desktop invisible reCAPTCHA expired");
+              toast.error("reCAPTCHA expired. Please try again.");
+              // Clean up on expiry
+              if (window.recaptchaVerifier) {
+                try {
+                  window.recaptchaVerifier.clear();
+                } catch (e) {
+                  console.warn("Error clearing expired desktop reCAPTCHA:", e);
+                }
+                window.recaptchaVerifier = null;
+              }
+            }
+          }
+        );
       }
       
-    } catch (error) {
-      console.error("reCAPTCHA setup error:", error);
+      // Try to render reCAPTCHA
+      try {
+        await window.recaptchaVerifier.render();
+        console.log("reCAPTCHA rendered successfully - Type:", isMobile ? "Visible" : "Invisible");
+        
+        // Additional wait for mobile compatibility
+        await new Promise(resolve => setTimeout(resolve, isMobile ? 800 : 300));
+        
+      } catch (renderError) {
+        console.error("reCAPTCHA render error:", renderError);
+        console.error("Render error details:", renderError.message);
+        console.error("Render error stack:", renderError.stack);
+        
+        // Show detailed error for debugging
+        toast.error(`reCAPTCHA Error: ${renderError.message}. Please refresh the page.`, {
+          position: "top-center",
+          autoClose: 8000,
+        });
+        
+        // Clean up failed reCAPTCHA
+        if (window.recaptchaVerifier) {
+          try {
+            await window.recaptchaVerifier.clear();
+          } catch (e) {
+            console.warn("Error clearing failed reCAPTCHA:", e);
+          }
+          window.recaptchaVerifier = null;
+        }
+        
+        throw new Error(`reCAPTCHA render failed: ${renderError.message}`);
+      }
       
-      // Show refresh alert for problematic devices
-      toast.error("reCAPTCHA failed to initialize. Please refresh the page and try again.", {
+      console.log("=== RECAPTCHA SETUP SUCCESS ===");
+      
+    } catch (error) {
+      console.error("=== RECAPTCHA SETUP FAILED ===");
+      console.error("Setup error:", error);
+      console.error("Setup error message:", error.message);
+      console.error("Setup error stack:", error.stack);
+      
+      // Show detailed error for debugging
+      toast.error(`reCAPTCHA Setup Failed: ${error.message}. Please refresh the page.`, {
         position: "top-center",
-        autoClose: 5000,
+        autoClose: 8000,
       });
       
       // Clean up on error
