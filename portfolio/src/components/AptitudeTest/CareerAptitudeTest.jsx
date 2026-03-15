@@ -315,94 +315,103 @@ const CareerAptitudeTest = () => {
     }
   };
 
-  const setupRecaptcha = async () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: (response) => {
-            // reCAPTCHA solved, allow signInWithPhoneNumber.
-            console.log("reCAPTCHA solved:", response);
-          },
-          'expired-callback': () => {
-            // Response expired. Ask user to solve reCAPTCHA again.
-            toast.error("reCAPTCHA expired. Please try again.");
-          }
+ const setupRecaptcha = () => {
+  try {
+
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+
+    window.recaptchaVerifier = new RecaptchaVerifier(
+      "recaptcha-container",
+      {
+        size: "invisible",
+        callback: () => {
+          console.log("reCAPTCHA solved");
+        },
+        "expired-callback": () => {
+          toast.error("Captcha expired. Try again.");
         }
-      );
-      
-      try {
-        await window.recaptchaVerifier.render();
-        console.log("reCAPTCHA rendered successfully");
-      } catch (error) {
-        console.error("reCAPTCHA render error:", error);
-      }
+      },
+      auth
+    );
+
+  } catch (error) {
+    console.error("reCAPTCHA setup error:", error);
+  }
+};
+
+ const handleSendOtp = async () => {
+
+  if (!mobile || mobile.length !== 10) {
+    toast.error("Please enter a valid 10-digit mobile number");
+    return;
+  }
+
+  setIsSendingOtp(true);
+
+  try {
+
+    // Recaptcha setup
+    setupRecaptcha();
+
+    const appVerifier = window.recaptchaVerifier;
+
+    const phoneNumber = "+91" + mobile;
+
+    const confirmationResult = await signInWithPhoneNumber(
+      auth,
+      phoneNumber,
+      appVerifier
+    );
+
+    setConfirmationResult(confirmationResult);
+
+    setOtpSent(true);
+    setOtpVerified(false);
+
+    toast.success("OTP sent successfully!");
+
+    // cooldown timer
+    setCooldown(60);
+
+    const timer = setInterval(() => {
+
+      setCooldown((prev) => {
+
+        if (prev <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+
+        return prev - 1;
+
+      });
+
+    }, 1000);
+
+  } catch (error) {
+
+    console.error("OTP send error:", error);
+
+    if (error.code === "auth/invalid-phone-number") {
+      toast.error("Invalid phone number");
+    } 
+    else if (error.code === "auth/too-many-requests") {
+      toast.error("Too many requests. Try later.");
+    } 
+    else {
+      toast.error("Failed to send OTP");
     }
-  };
 
-  const handleSendOtp = async () => {
-    if (!mobile || mobile.length !== 10) {
-      toast.error("Enter valid mobile number");
-      return;
-    }
-
-    setIsSendingOtp(true);
-
-    try {
-      await setupRecaptcha();
-      
-      // Add small delay to ensure reCAPTCHA is fully initialized
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      const phoneNumber = "+91" + mobile;
-      const appVerifier = window.recaptchaVerifier;
-
-      console.log("Sending OTP to:", phoneNumber);
-      console.log("App verifier:", appVerifier);
-
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        phoneNumber,
-        appVerifier
-      );
-
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      toast.success("OTP sent successfully");
-
-      setCooldown(60);
-      const timer = setInterval(() => {
-        setCooldown(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-    } catch (error) {
-      console.error("OTP Send Error:", error);
-      console.error("Error Code:", error.code);
-      console.error("Error Message:", error.message);
-
-      if (error.code === "auth/too-many-requests") {
-        toast.error("Too many requests. Please wait a few minutes and try again.");
-      } else if (error.code === "auth/invalid-phone-number") {
-        toast.error("Invalid phone number");
-      } else if (error.code === "auth/missing-recaptcha-token") {
-        toast.error("reCAPTCHA verification failed. Please refresh and try again.");
-      } else if (error.code === "auth/missing-client-type") {
-        toast.error("Firebase client type missing. Please check Firebase configuration.");
-      } else {
-        toast.error(`Failed to send OTP: ${error.message}`);
-      }
-    }
+  } finally {
 
     setIsSendingOtp(false);
-  };
+
+  }
+
+};
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -530,7 +539,7 @@ const handleConsultationSubmit = async (consultationData) => {
                 </div>
                 
                 {/* Firebase reCAPTCHA container */}
-                <div id="recaptcha-container" style={{display: 'none'}}></div>
+                <div id="recaptcha-container"></div>
                 
                 {!otpVerified && mobile.length === 10 && (
                   <button 
