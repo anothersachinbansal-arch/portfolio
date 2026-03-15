@@ -320,25 +320,50 @@ const CareerAptitudeTest = () => {
       window.recaptchaVerifier = new RecaptchaVerifier(
         "recaptcha-container",
         {
-          size: "invisible"
+          size: "invisible",
+          callback: (response) => {
+            console.log("reCAPTCHA solved");
+          },
+          "expired-callback": () => {
+            console.log("reCAPTCHA expired");
+          }
         },
         auth
       );
     }
   };
 
+  // Real Firebase Phone Authentication
   const handleSendOtp = async () => {
-    if (!mobile || mobile.length !== 10) {
-      toast.error("Enter valid mobile number");
+    // Enhanced validation: only digits, exactly 10 digits
+    if (!mobile || !/^\d{10}$/.test(mobile)) {
+      toast.error("Enter valid 10-digit mobile number");
       return;
     }
 
     setIsSendingOtp(true);
 
     try {
-      setupRecaptcha();
-
       const phoneNumber = "+91" + mobile;
+      console.log("Sending OTP to:", phoneNumber);
+
+      // Initialize reCAPTCHA verifier
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          "recaptcha-container",
+          {
+            size: "invisible",
+            callback: (response) => {
+              console.log("reCAPTCHA solved");
+            },
+            "expired-callback": () => {
+              console.log("reCAPTCHA expired");
+            }
+          },
+          auth
+        );
+      }
+
       const appVerifier = window.recaptchaVerifier;
 
       const confirmation = await signInWithPhoneNumber(
@@ -363,14 +388,14 @@ const CareerAptitudeTest = () => {
       }, 1000);
 
     } catch (error) {
-      console.error("OTP Send Error:", error);
+      console.error("Firebase OTP Error:", error);
       console.error("Error Code:", error.code);
       console.error("Error Message:", error.message);
 
       if (error.code === "auth/too-many-requests") {
         toast.error("Too many requests. Try again later.");
       } else if (error.code === "auth/invalid-phone-number") {
-        toast.error("Invalid phone number");
+        toast.error("Invalid phone number format. Please check your number.");
       } else if (error.code === "auth/missing-recaptcha-token") {
         toast.error("reCAPTCHA verification failed. Please refresh and try again.");
       } else if (error.code === "auth/missing-client-type") {
