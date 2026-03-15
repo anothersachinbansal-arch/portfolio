@@ -315,103 +315,124 @@ const CareerAptitudeTest = () => {
     }
   };
 
- const setupRecaptcha = () => {
-  try {
+  const setupRecaptcha = async () => {
+    try {
+      // Clear existing recaptcha verifier if it exists
+      if (window.recaptchaVerifier) {
+        console.log("Clearing existing reCAPTCHA verifier");
+        try {
+          await window.recaptchaVerifier.clear();
+        } catch (clearError) {
+          console.warn("Error clearing reCAPTCHA:", clearError);
+        }
+        window.recaptchaVerifier = null;
+      }
 
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
+      // Clear the container
+      const container = document.getElementById('recaptcha-container');
+      if (container) {
+        container.innerHTML = '';
+      }
+
+      // Wait a bit for cleanup
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Create new recaptcha verifier
+      console.log("Creating new reCAPTCHA verifier");
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        auth,
+        "recaptcha-container",
+        {
+          size: "invisible",
+          callback: (response) => {
+            console.log("reCAPTCHA solved successfully:", response);
+          },
+          'expired-callback': () => {
+            console.error("reCAPTCHA expired");
+            toast.error("reCAPTCHA expired. Please try again.");
+            // Clear and reset on expiry
+            if (window.recaptchaVerifier) {
+              window.recaptchaVerifier.clear();
+              window.recaptchaVerifier = null;
+            }
+          }
+        }
+      );
+      
+      // Render the reCAPTCHA
+      await window.recaptchaVerifier.render();
+      console.log("reCAPTCHA rendered successfully");
+      
+      // Additional wait for mobile compatibility
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+    } catch (error) {
+      console.error("reCAPTCHA setup error:", error);
+      throw new Error(`reCAPTCHA setup failed: ${error.message}`);
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!mobile || mobile.length !== 10) {
+      toast.error("Enter valid mobile number");
+      return;
     }
 
-    window.recaptchaVerifier = new RecaptchaVerifier(
-      "recaptcha-container",
-      {
-        size: "invisible",
-        callback: () => {
-          console.log("reCAPTCHA solved");
-        },
-        "expired-callback": () => {
-          toast.error("Captcha expired. Try again.");
-        }
-      },
-      auth
-    );
+    setIsSendingOtp(true);
 
-  } catch (error) {
-    console.error("reCAPTCHA setup error:", error);
-  }
-};
+    try {
+      await setupRecaptcha();
+      
+      // Add small delay to ensure reCAPTCHA is fully initialized
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
- const handleSendOtp = async () => {
+      const phoneNumber = "+91" + mobile;
+      const appVerifier = window.recaptchaVerifier;
 
-  if (!mobile || mobile.length !== 10) {
-    toast.error("Please enter a valid 10-digit mobile number");
-    return;
-  }
+      console.log("Sending OTP to:", phoneNumber);
+      console.log("App verifier:", appVerifier);
 
-  setIsSendingOtp(true);
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        phoneNumber,
+        appVerifier
+      );
 
-  try {
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      toast.success("OTP sent successfully");
 
-    // Recaptcha setup
-    setupRecaptcha();
+      setCooldown(60);
+      const timer = setInterval(() => {
+        setCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
 
-    const appVerifier = window.recaptchaVerifier;
+    } catch (error) {
+      console.error("OTP Send Error:", error);
+      console.error("Error Code:", error.code);
+      console.error("Error Message:", error.message);
 
-    const phoneNumber = "+91" + mobile;
-
-    const confirmationResult = await signInWithPhoneNumber(
-      auth,
-      phoneNumber,
-      appVerifier
-    );
-
-    setConfirmationResult(confirmationResult);
-
-    setOtpSent(true);
-    setOtpVerified(false);
-
-    toast.success("OTP sent successfully!");
-
-    // cooldown timer
-    setCooldown(60);
-
-    const timer = setInterval(() => {
-
-      setCooldown((prev) => {
-
-        if (prev <= 1) {
-          clearInterval(timer);
-          return 0;
-        }
-
-        return prev - 1;
-
-      });
-
-    }, 1000);
-
-  } catch (error) {
-
-    console.error("OTP send error:", error);
-
-    if (error.code === "auth/invalid-phone-number") {
-      toast.error("Invalid phone number");
-    } 
-    else if (error.code === "auth/too-many-requests") {
-      toast.error("Too many requests. Try later.");
-    } 
-    else {
-      toast.error("Failed to send OTP");
+      if (error.code === "auth/too-many-requests") {
+        toast.error("Too many requests. Please wait a few minutes and try again.");
+      } else if (error.code === "auth/invalid-phone-number") {
+        toast.error("Invalid phone number");
+      } else if (error.code === "auth/missing-recaptcha-token") {
+        toast.error("reCAPTCHA verification failed. Please refresh and try again.");
+      } else if (error.code === "auth/missing-client-type") {
+        toast.error("Firebase client type missing. Please check Firebase configuration.");
+      } else {
+        toast.error(`Failed to send OTP: ${error.message}`);
+      }
     }
-
-  } finally {
 
     setIsSendingOtp(false);
-
-  }
-
-};
+  };
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -539,7 +560,7 @@ const handleConsultationSubmit = async (consultationData) => {
                 </div>
                 
                 {/* Firebase reCAPTCHA container */}
-                <div id="recaptcha-container"></div>
+                <div id="recaptcha-container" style={{display: 'none'}}></div>
                 
                 {!otpVerified && mobile.length === 10 && (
                   <button 
