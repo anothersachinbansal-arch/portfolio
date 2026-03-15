@@ -388,6 +388,12 @@ const CareerAptitudeTest = () => {
           window.recaptchaVerifier = null;
         }
 
+        // Show refresh alert for problematic devices
+        toast.error("reCAPTCHA initialization failed. Please refresh the page and try again.", {
+          position: "top-center",
+          autoClose: 5000,
+        });
+
         // Fallback to visible reCAPTCHA
         console.log("Creating visible reCAPTCHA verifier as fallback");
         
@@ -434,6 +440,13 @@ const CareerAptitudeTest = () => {
       
     } catch (error) {
       console.error("reCAPTCHA setup error:", error);
+      
+      // Show refresh alert for problematic devices
+      toast.error("reCAPTCHA failed to initialize. Please refresh the page and try again.", {
+        position: "top-center",
+        autoClose: 5000,
+      });
+      
       // Clean up on error
       if (window.recaptchaVerifier) {
         try {
@@ -484,6 +497,19 @@ const CareerAptitudeTest = () => {
         );
       } catch (signInError) {
         console.error("signInWithPhoneNumber error:", signInError);
+        
+        // Show refresh alert for problematic devices
+        if (signInError.message && signInError.message.includes("captcha")) {
+          toast.error("reCAPTCHA verification failed. Please refresh the page and try again.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        } else if (signInError.message && signInError.message.includes("network")) {
+          toast.error("Network error. Please refresh the page and check your connection.", {
+            position: "top-center",
+            autoClose: 5000,
+          });
+        }
         
         // Clean up reCAPTCHA on sign-in error
         if (window.recaptchaVerifier) {
