@@ -328,46 +328,121 @@ const CareerAptitudeTest = () => {
         window.recaptchaVerifier = null;
       }
 
-      // Clear the container
+      // Clear the container completely
       const container = document.getElementById('recaptcha-container');
       if (container) {
         container.innerHTML = '';
+        // Start with invisible, will change to visible if needed
+        container.style.display = 'none';
       }
 
-      // Wait a bit for cleanup
-      await new Promise(resolve => setTimeout(resolve, 100));
+      // Wait for cleanup to complete
+      await new Promise(resolve => setTimeout(resolve, 200));
 
-      // Create new recaptcha verifier
-      console.log("Creating new reCAPTCHA verifier");
+      // Try invisible reCAPTCHA first (for desktop/better mobile browsers)
+      console.log("Creating invisible reCAPTCHA verifier");
       window.recaptchaVerifier = new RecaptchaVerifier(
         auth,
         "recaptcha-container",
         {
           size: "invisible",
+          badge: "bottomright",
+          theme: "light",
           callback: (response) => {
-            console.log("reCAPTCHA solved successfully:", response);
+            console.log("Invisible reCAPTCHA solved successfully:", response);
           },
           'expired-callback': () => {
-            console.error("reCAPTCHA expired");
+            console.error("Invisible reCAPTCHA expired");
             toast.error("reCAPTCHA expired. Please try again.");
-            // Clear and reset on expiry
+            // Clean up on expiry
             if (window.recaptchaVerifier) {
-              window.recaptchaVerifier.clear();
+              try {
+                window.recaptchaVerifier.clear();
+              } catch (e) {
+                console.warn("Error clearing expired reCAPTCHA:", e);
+              }
               window.recaptchaVerifier = null;
             }
           }
         }
       );
       
-      // Render the reCAPTCHA
-      await window.recaptchaVerifier.render();
-      console.log("reCAPTCHA rendered successfully");
-      
-      // Additional wait for mobile compatibility
-      await new Promise(resolve => setTimeout(resolve, 500));
+      // Try to render invisible reCAPTCHA
+      try {
+        await window.recaptchaVerifier.render();
+        console.log("Invisible reCAPTCHA rendered successfully");
+        
+        // Additional wait for mobile compatibility
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+      } catch (renderError) {
+        console.warn("Invisible reCAPTCHA failed, switching to visible reCAPTCHA");
+        
+        // Clean up failed invisible reCAPTCHA
+        if (window.recaptchaVerifier) {
+          try {
+            await window.recaptchaVerifier.clear();
+          } catch (e) {
+            console.warn("Error clearing failed invisible reCAPTCHA:", e);
+          }
+          window.recaptchaVerifier = null;
+        }
+
+        // Fallback to visible reCAPTCHA
+        console.log("Creating visible reCAPTCHA verifier as fallback");
+        
+        // Show container for visible reCAPTCHA
+        if (container) {
+          container.style.display = 'block';
+          container.style.textAlign = 'center';
+          container.style.margin = '10px 0';
+        }
+
+        window.recaptchaVerifier = new RecaptchaVerifier(
+          auth,
+          "recaptcha-container",
+          {
+            size: "normal",
+            theme: "light",
+            callback: (response) => {
+              console.log("Visible reCAPTCHA solved successfully:", response);
+              toast.success("reCAPTCHA verified! Sending OTP...");
+            },
+            'expired-callback': () => {
+              console.error("Visible reCAPTCHA expired");
+              toast.error("reCAPTCHA expired. Please try again.");
+              // Clean up on expiry
+              if (window.recaptchaVerifier) {
+                try {
+                  window.recaptchaVerifier.clear();
+                } catch (e) {
+                  console.warn("Error clearing expired visible reCAPTCHA:", e);
+                }
+                window.recaptchaVerifier = null;
+              }
+            }
+          }
+        );
+
+        // Render visible reCAPTCHA
+        await window.recaptchaVerifier.render();
+        console.log("Visible reCAPTCHA rendered successfully");
+        
+        // Wait for visible reCAPTCHA to be ready
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
       
     } catch (error) {
       console.error("reCAPTCHA setup error:", error);
+      // Clean up on error
+      if (window.recaptchaVerifier) {
+        try {
+          window.recaptchaVerifier.clear();
+        } catch (e) {
+          console.warn("Error cleaning up reCAPTCHA:", e);
+        }
+        window.recaptchaVerifier = null;
+      }
       throw new Error(`reCAPTCHA setup failed: ${error.message}`);
     }
   };
@@ -381,27 +456,54 @@ const CareerAptitudeTest = () => {
     setIsSendingOtp(true);
 
     try {
+      // Setup reCAPTCHA with proper error handling
       await setupRecaptcha();
       
-      // Add small delay to ensure reCAPTCHA is fully initialized
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      // Verify reCAPTCHA is properly initialized
+      if (!window.recaptchaVerifier) {
+        throw new Error("reCAPTCHA not properly initialized");
+      }
+
+      // Additional delay for mobile compatibility
+      await new Promise(resolve => setTimeout(resolve, 500));
 
       const phoneNumber = "+91" + mobile;
       const appVerifier = window.recaptchaVerifier;
 
       console.log("Sending OTP to:", phoneNumber);
-      console.log("App verifier:", appVerifier);
+      console.log("App verifier type:", typeof appVerifier);
+      console.log("App verifier exists:", !!appVerifier);
 
-      const confirmation = await signInWithPhoneNumber(
-        auth,
-        phoneNumber,
-        appVerifier
-      );
+      // Enhanced error handling for signInWithPhoneNumber
+      let confirmation;
+      try {
+        confirmation = await signInWithPhoneNumber(
+          auth,
+          phoneNumber,
+          appVerifier
+        );
+      } catch (signInError) {
+        console.error("signInWithPhoneNumber error:", signInError);
+        
+        // Clean up reCAPTCHA on sign-in error
+        if (window.recaptchaVerifier) {
+          try {
+            await window.recaptchaVerifier.clear();
+          } catch (clearError) {
+            console.warn("Error clearing reCAPTCHA after sign-in error:", clearError);
+          }
+          window.recaptchaVerifier = null;
+        }
+        
+        throw signInError;
+      }
 
+      // Store confirmation result
       setConfirmationResult(confirmation);
       setOtpSent(true);
       toast.success("OTP sent successfully");
 
+      // Start cooldown timer
       setCooldown(60);
       const timer = setInterval(() => {
         setCooldown(prev => {
@@ -417,17 +519,25 @@ const CareerAptitudeTest = () => {
       console.error("OTP Send Error:", error);
       console.error("Error Code:", error.code);
       console.error("Error Message:", error.message);
+      console.error("Error Stack:", error.stack);
 
+      // Enhanced error handling for mobile compatibility
       if (error.code === "auth/too-many-requests") {
         toast.error("Too many requests. Please wait a few minutes and try again.");
       } else if (error.code === "auth/invalid-phone-number") {
-        toast.error("Invalid phone number");
+        toast.error("Invalid phone number format. Please check your number.");
       } else if (error.code === "auth/missing-recaptcha-token") {
         toast.error("reCAPTCHA verification failed. Please refresh and try again.");
       } else if (error.code === "auth/missing-client-type") {
         toast.error("Firebase client type missing. Please check Firebase configuration.");
+      } else if (error.code === "auth/quota-exceeded") {
+        toast.error("SMS quota exceeded. Please try again later.");
+      } else if (error.message && error.message.includes("captcha")) {
+        toast.error("reCAPTCHA verification failed. Please refresh the page and try again.");
+      } else if (error.message && error.message.includes("network")) {
+        toast.error("Network error. Please check your internet connection and try again.");
       } else {
-        toast.error(`Failed to send OTP: ${error.message}`);
+        toast.error(`Failed to send OTP: ${error.message || "Unknown error occurred"}`);
       }
     }
 
