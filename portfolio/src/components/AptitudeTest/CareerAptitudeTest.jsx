@@ -366,20 +366,15 @@ const CareerAptitudeTest = () => {
             theme: "light",
             callback: (response) => {
               console.log("Mobile visible reCAPTCHA solved successfully:", response);
+              // Keep reCAPTCHA visible after verification for mobile
+              // Don't clear or hide it - let Firebase handle it naturally
               toast.success("reCAPTCHA verified! Sending OTP...");
             },
             'expired-callback': () => {
               console.error("Mobile visible reCAPTCHA expired");
               toast.error("reCAPTCHA expired. Please try again.");
-              // Clean up on expiry
-              if (window.recaptchaVerifier) {
-                try {
-                  window.recaptchaVerifier.clear();
-                } catch (e) {
-                  console.warn("Error clearing expired mobile reCAPTCHA:", e);
-                }
-                window.recaptchaVerifier = null;
-              }
+              // Don't clear reCAPTCHA on expiry for mobile - let user handle it
+              // This prevents the checkbox from disappearing unexpectedly
             }
           }
         );
@@ -446,7 +441,11 @@ const CareerAptitudeTest = () => {
           } catch (e) {
             console.warn("Error clearing failed reCAPTCHA:", e);
           }
-          window.recaptchaVerifier = null;
+          // Don't set to null for mobile - keep it available for retry
+          // This prevents the checkbox from disappearing on error
+          if (!isMobile) {
+            window.recaptchaVerifier = null;
+          }
         }
         
         throw new Error(`reCAPTCHA render failed: ${renderError.message}`);
@@ -480,7 +479,11 @@ const CareerAptitudeTest = () => {
         } catch (e) {
           console.warn("Error cleaning up reCAPTCHA:", e);
         }
-        window.recaptchaVerifier = null;
+        // Don't set to null for mobile - keep it available for retry
+        // This prevents the checkbox from disappearing on error
+        if (!isMobile) {
+          window.recaptchaVerifier = null;
+        }
       }
       throw new Error(`reCAPTCHA setup failed: ${error.message}`);
     }
@@ -558,7 +561,11 @@ const CareerAptitudeTest = () => {
           } catch (clearError) {
             console.warn("Error clearing reCAPTCHA after sign-in error:", clearError);
           }
-          window.recaptchaVerifier = null;
+          // Don't set to null for mobile - keep it available for retry
+          // This prevents the checkbox from disappearing on error
+          if (!isMobile) {
+            window.recaptchaVerifier = null;
+          }
         }
         
         throw signInError;
