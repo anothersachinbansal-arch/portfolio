@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { FaCheck, FaTimes, FaPrint, FaRedo, FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import ScratchCard from './ScratchCard';
@@ -99,17 +99,28 @@ const CareerAptitudeTest = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
-  const [recaptchaVerifierRef, setRecaptchaVerifierRef] = useState(null);
   const [cooldown, setCooldown] = useState(0);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [testData, setTestData] = useState(null);
   const [showScratchCard, setShowScratchCard] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
+  const recaptchaVerifierRef = useRef(null);
+  const cooldownTimerRef = useRef(null);
   
   const toggleFaq = (index) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
+
+  useEffect(() => {
+    return () => {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+      }
+
+      resetRecaptcha();
+    };
+  }, []);
 
   const currentCategory = categories[currentCategoryIndex];
   const currentQuestion = currentCategory.questions[currentQuestionIndex];
@@ -315,22 +326,30 @@ const CareerAptitudeTest = () => {
     }
   };
 
-  const setupRecaptcha = () => {
-    if (!window.recaptchaVerifier) {
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        "recaptcha-container",
-        {
-          size: "invisible",
-          callback: (response) => {
-            console.log("reCAPTCHA solved");
-          },
-          "expired-callback": () => {
-            console.log("reCAPTCHA expired");
-          }
-        },
-        auth
-      );
+  const resetRecaptcha = () => {
+    if (recaptchaVerifierRef.current) {
+      recaptchaVerifierRef.current.clear();
+      recaptchaVerifierRef.current = null;
     }
+  };
+
+  const setupRecaptcha = () => {
+    if (recaptchaVerifierRef.current) {
+      return recaptchaVerifierRef.current;
+    }
+
+    recaptchaVerifierRef.current = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      callback: () => {
+        // Invisible recaptcha solved.
+      },
+      'expired-callback': () => {
+        setOtpError('reCAPTCHA expired. Please try sending OTP again.');
+        resetRecaptcha();
+      }
+    });
+
+    return recaptchaVerifierRef.current;
   };
 
   // Real Firebase Phone Authentication
@@ -341,30 +360,12 @@ const CareerAptitudeTest = () => {
       return;
     }
 
+    setOtpError('');
     setIsSendingOtp(true);
 
     try {
       const phoneNumber = "+91" + mobile;
-      console.log("Sending OTP to:", phoneNumber);
-
-      // Initialize reCAPTCHA verifier
-      if (!window.recaptchaVerifier) {
-        window.recaptchaVerifier = new RecaptchaVerifier(
-          "recaptcha-container",
-          {
-            size: "invisible",
-            callback: (response) => {
-              console.log("reCAPTCHA solved");
-            },
-            "expired-callback": () => {
-              console.log("reCAPTCHA expired");
-            }
-          },
-          auth
-        );
-      }
-
-      const appVerifier = window.recaptchaVerifier;
+      const appVerifier = setupRecaptcha();
 
       const confirmation = await signInWithPhoneNumber(
         auth,
@@ -374,13 +375,19 @@ const CareerAptitudeTest = () => {
 
       setConfirmationResult(confirmation);
       setOtpSent(true);
+      setOtp('');
       toast.success("OTP sent successfully");
 
       setCooldown(60);
-      const timer = setInterval(() => {
+      if (cooldownTimerRef.current) {
+        clearInterval(cooldownTimerRef.current);
+      }
+
+      cooldownTimerRef.current = setInterval(() => {
         setCooldown(prev => {
           if (prev <= 1) {
-            clearInterval(timer);
+            clearInterval(cooldownTimerRef.current);
+            cooldownTimerRef.current = null;
             return 0;
           }
           return prev - 1;
@@ -392,16 +399,19 @@ const CareerAptitudeTest = () => {
       console.error("Error Code:", error.code);
       console.error("Error Message:", error.message);
 
-      if (error.code === "auth/too-many-requests") {
-        toast.error("Too many requests. Try again later.");
-      } else if (error.code === "auth/invalid-phone-number") {
-        toast.error("Invalid phone number format. Please check your number.");
-      } else if (error.code === "auth/missing-recaptcha-token") {
-        toast.error("reCAPTCHA verification failed. Please refresh and try again.");
-      } else if (error.code === "auth/missing-client-type") {
-        toast.error("Firebase client type missing. Please check Firebase configuration.");
+      if (error.code === 'auth/too-many-requests') {
+        setOtpError('Too many requests. Try again later.');
+        toast.error('Too many requests. Try again later.');
+      } else if (error.code === 'auth/invalid-phone-number') {
+        setOtpError('Invalid phone number format. Please check your number.');
+        toast.error('Invalid phone number format. Please check your number.');
+      } else if (error.code === 'auth/captcha-check-failed' || error.code === 'auth/invalid-app-credential') {
+        setOtpError('reCAPTCHA validation failed. Please try sending OTP again.');
+        toast.error('reCAPTCHA validation failed. Please try again.');
+        resetRecaptcha();
       } else {
-        toast.error(`Failed to send OTP: ${error.message}`);
+        setOtpError(error.message || 'Failed to send OTP. Please try again.');
+        toast.error(error.message || 'Failed to send OTP. Please try again.');
       }
     }
 
@@ -417,14 +427,25 @@ const CareerAptitudeTest = () => {
   };
 
   const handleVerifyOtp = async () => {
+    if (!confirmationResult) {
+      setOtpError('Please send OTP first.');
+      return;
+    }
+
     try {
-      const result = await confirmationResult.confirm(otp);
-      const user = result.user;
+      setOtpError('');
+      await confirmationResult.confirm(otp);
       setOtpVerified(true);
       toast.success("OTP verified");
     } catch (error) {
-      console.error(error);
-      toast.error("Invalid OTP");
+      if (error.code === 'auth/invalid-verification-code') {
+        setOtpError('Invalid OTP. Please enter the correct code.');
+        toast.error('Invalid OTP. Please enter the correct code.');
+        return;
+      }
+
+      setOtpError(error.message || 'OTP verification failed. Please try again.');
+      toast.error(error.message || 'OTP verification failed. Please try again.');
     }
   };
 
