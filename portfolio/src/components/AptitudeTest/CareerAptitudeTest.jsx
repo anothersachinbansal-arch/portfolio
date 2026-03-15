@@ -432,6 +432,13 @@ const CareerAptitudeTest = () => {
           autoClose: 8000,
         });
         
+        // Show English prompt for reCAPTCHA failure
+        setTimeout(() => {
+          if (confirm("reCAPTCHA verification failed. Would you like to refresh the page and try again?")) {
+            window.location.reload();
+          }
+        }, 1000);
+        
         // Clean up failed reCAPTCHA
         if (window.recaptchaVerifier) {
           try {
@@ -458,6 +465,13 @@ const CareerAptitudeTest = () => {
         position: "top-center",
         autoClose: 8000,
       });
+      
+      // Show English prompt for reCAPTCHA failure
+      setTimeout(() => {
+        if (confirm("reCAPTCHA setup failed. Would you like to refresh the page and try again?")) {
+          window.location.reload();
+        }
+      }, 1000);
       
       // Clean up on error
       if (window.recaptchaVerifier) {
@@ -516,11 +530,25 @@ const CareerAptitudeTest = () => {
             position: "top-center",
             autoClose: 5000,
           });
+          
+          // Show English prompt for captcha failure
+          setTimeout(() => {
+            if (confirm("reCAPTCHA verification failed. Would you like to refresh the page and try again?")) {
+              window.location.reload();
+            }
+          }, 1000);
         } else if (signInError.message && signInError.message.includes("network")) {
           toast.error("Network error. Please refresh the page and check your connection.", {
             position: "top-center",
             autoClose: 5000,
           });
+          
+          // Show English prompt for network failure
+          setTimeout(() => {
+            if (confirm("Network error occurred. Would you like to refresh the page and try again?")) {
+              window.location.reload();
+            }
+          }, 1000);
         }
         
         // Clean up reCAPTCHA on sign-in error
@@ -540,6 +568,11 @@ const CareerAptitudeTest = () => {
       setConfirmationResult(confirmation);
       setOtpSent(true);
       toast.success("OTP sent successfully");
+      
+      // Show additional success alert for user confirmation
+      setTimeout(() => {
+        alert("OTP sent successfully! Please check your mobile number for the verification code.");
+      }, 1000);
 
       // Start cooldown timer
       setCooldown(60);
