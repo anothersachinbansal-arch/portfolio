@@ -6,23 +6,10 @@ import './AptitudeTest.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
-import { initializeApp } from "firebase/app";
-import { getAuth, RecaptchaVerifier, signInWithPhoneNumber } from "firebase/auth";
 
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDI34cJ_jMMjDgM-kr1vfoZlHBoPgTnAkM",
-  authDomain: "career-test-b0769.firebaseapp.com",
-  projectId: "career-test-b0769",
-  storageBucket: "career-test-b0769.firebasestorage.app",
-  messagingSenderId: "309231346456",
-  appId: "1:309231346456:web:36068fd374d6817cc4f46d",
-  measurementId: "G-RWQFPQZZGM"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
+// Firebase imports
+import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
+import { auth } from "../../firebase";
 
 const CareerAptitudeTest = () => {
   const categories = [
@@ -328,6 +315,74 @@ const CareerAptitudeTest = () => {
     }
   };
 
+  const setupRecaptcha = () => {
+    if (!window.recaptchaVerifier) {
+      window.recaptchaVerifier = new RecaptchaVerifier(
+        "recaptcha-container",
+        {
+          size: "invisible"
+        },
+        auth
+      );
+    }
+  };
+
+  const handleSendOtp = async () => {
+    if (!mobile || mobile.length !== 10) {
+      toast.error("Enter valid mobile number");
+      return;
+    }
+
+    setIsSendingOtp(true);
+
+    try {
+      setupRecaptcha();
+
+      const phoneNumber = "+91" + mobile;
+      const appVerifier = window.recaptchaVerifier;
+
+      const confirmation = await signInWithPhoneNumber(
+        auth,
+        phoneNumber,
+        appVerifier
+      );
+
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      toast.success("OTP sent successfully");
+
+      setCooldown(60);
+      const timer = setInterval(() => {
+        setCooldown(prev => {
+          if (prev <= 1) {
+            clearInterval(timer);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+    } catch (error) {
+      console.error("OTP Send Error:", error);
+      console.error("Error Code:", error.code);
+      console.error("Error Message:", error.message);
+
+      if (error.code === "auth/too-many-requests") {
+        toast.error("Too many requests. Try again later.");
+      } else if (error.code === "auth/invalid-phone-number") {
+        toast.error("Invalid phone number");
+      } else if (error.code === "auth/missing-recaptcha-token") {
+        toast.error("reCAPTCHA verification failed. Please refresh and try again.");
+      } else if (error.code === "auth/missing-client-type") {
+        toast.error("Firebase client type missing. Please check Firebase configuration.");
+      } else {
+        toast.error(`Failed to send OTP: ${error.message}`);
+      }
+    }
+
+    setIsSendingOtp(false);
+  };
+
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setFormData({
@@ -336,128 +391,15 @@ const CareerAptitudeTest = () => {
     });
   };
 
-  const handleSendOtp = async () => {
-    if (!mobile || mobile.length !== 10) {
-      alert('Please enter a valid 10-digit mobile number');
-      return;
-    }
-    
-    setIsSendingOtp(true);
-    setOtpError('');
-    
-    try {
-      // Try Firebase Phone Auth first
-      const phoneNumber = '+91' + mobile;
-      console.log('=== TRYING FIREBASE PHONE AUTH ===');
-      console.log('Mobile input:', mobile);
-      console.log('Phone number for Firebase:', phoneNumber);
-      
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumber);
-      
-      console.log('Firebase Phone Auth successful');
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      setOtpVerified(false);
-      setOtpError('');
-      toast.success('OTP sent successfully!');
-      
-      // Start 30-second cooldown
-      setCooldown(30);
-      const timer = setInterval(() => {
-        setCooldown((prev) => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-      
-    } catch (error) {
-      console.error('=== FIREBASE ERROR DETAILS ===');
-      console.error('Error:', error);
-      console.error('Error code:', error.code);
-      console.error('Error message:', error.message);
-      
-      // Handle rate limiting with demo mode fallback
-      if (error.code === 'auth/too-many-requests' || error.message.includes('TOO_MANY_ATTEMPTS_TRY_LATER')) {
-        console.log('=== FALLBACK TO DEMO MODE ===');
-        console.log('Firebase rate limited, using demo mode');
-        
-        // Demo mode confirmation
-        const demoConfirmation = {
-          confirm: async (otp) => {
-            console.log('Demo OTP verification with:', otp);
-            if (otp && otp.length === 6) {
-              console.log('Demo OTP verification successful');
-              return { user: { phoneNumber: '+91' + mobile } };
-            } else {
-              throw new Error('Invalid OTP. Please enter 6-digit OTP.');
-            }
-          }
-        };
-        
-        setConfirmationResult(demoConfirmation);
-        setOtpSent(true);
-        setOtpVerified(false);
-        setOtpError('');
-        toast.success('OTP sent successfully (Demo Mode - Firebase rate limited)!');
-        
-        // Start 30-second cooldown
-        setCooldown(30);
-        const timer = setInterval(() => {
-          setCooldown((prev) => {
-            if (prev <= 1) {
-              clearInterval(timer);
-              return 0;
-            }
-            return prev - 1;
-          });
-        }, 1000);
-        
-        return; // Exit early, don't show error
-      }
-      
-      // Handle other Firebase errors
-      let errorMessage = 'Failed to send OTP. Please try again.';
-      
-      if (error.code === 'auth/invalid-phone-number') {
-        errorMessage = 'Invalid phone number. Please check the number and try again.';
-      } else if (error.code === 'auth/invalid-app-credential') {
-        errorMessage = 'Authentication failed. Please refresh the page.';
-      } else if (error.code === 'auth/argument-error') {
-        errorMessage = 'Invalid phone number format. Please check your number.';
-      } else if (error.message.includes('TOO_MANY_ATTEMPTS_TRY_LATER')) {
-        errorMessage = 'Too many requests. Please try again later.';
-      }
-      
-      setOtpError(errorMessage);
-      toast.error(errorMessage);
-    } finally {
-      setIsSendingOtp(false);
-    }
-  };
-
   const handleVerifyOtp = async () => {
-    if (!otp || otp.length !== 6) {
-      setOtpError('Please enter a valid 6-digit OTP');
-      return;
-    }
-
     try {
-      if (confirmationResult) {
-        const result = await confirmationResult.confirm(otp);
-        // OTP verified successfully
-        setOtpVerified(true);
-        setOtpError('');
-        toast.success('Mobile number verified successfully!');
-      } else {
-        setOtpError('Please send OTP first');
-      }
+      const result = await confirmationResult.confirm(otp);
+      const user = result.user;
+      setOtpVerified(true);
+      toast.success("OTP verified");
     } catch (error) {
-      console.error('Error verifying OTP:', error);
-      setOtpError('Invalid OTP. Please try again.');
-      toast.error('Invalid OTP. Please try again.');
+      console.error(error);
+      toast.error("Invalid OTP");
     }
   };
 
