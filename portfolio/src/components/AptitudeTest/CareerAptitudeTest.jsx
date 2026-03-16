@@ -99,7 +99,7 @@ const CareerAptitudeTest = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
-  const [recaptchaVerifierRef, setRecaptchaVerifierRef] = useState(null);
+  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [testData, setTestData] = useState(null);
@@ -366,8 +366,7 @@ const CareerAptitudeTest = () => {
             theme: "light",
             callback: (response) => {
               console.log("Mobile visible reCAPTCHA solved successfully:", response);
-              // Keep reCAPTCHA visible after verification for mobile
-              // Don't clear or hide it - let Firebase handle it naturally
+              setRecaptchaVerified(true);
               toast.success("reCAPTCHA verified! Sending OTP...");
             },
             'expired-callback': () => {
@@ -390,6 +389,7 @@ const CareerAptitudeTest = () => {
             theme: "light",
             callback: (response) => {
               console.log("Desktop invisible reCAPTCHA solved successfully:", response);
+              setRecaptchaVerified(true);
             },
             'expired-callback': () => {
               console.error("Desktop invisible reCAPTCHA expired");
@@ -568,6 +568,9 @@ const CareerAptitudeTest = () => {
           }
         }
         
+        // Reset reCAPTCHA verified state on error
+        setRecaptchaVerified(false);
+        
         throw signInError;
       }
 
@@ -575,11 +578,6 @@ const CareerAptitudeTest = () => {
       setConfirmationResult(confirmation);
       setOtpSent(true);
       toast.success("OTP sent successfully");
-      
-      // Show additional success alert for user confirmation
-      setTimeout(() => {
-        alert("OTP sent successfully! Please check your mobile number for the verification code.");
-      }, 1000);
 
       // Start cooldown timer
       setCooldown(60);
@@ -628,6 +626,10 @@ const CareerAptitudeTest = () => {
       ...formData,
       [name]: value
     });
+    // Reset reCAPTCHA state when mobile number changes
+    if (name === 'phone' || e.target.type === 'tel') {
+      setRecaptchaVerified(false);
+    }
   };
 
   const handleVerifyOtp = async () => {
@@ -739,6 +741,8 @@ const handleConsultationSubmit = async (consultationData) => {
                       const value = e.target.value.replace(/\D/g, '');
                       if (value.length <= 10) {
                         setMobile(value);
+                        // Reset reCAPTCHA state when mobile number changes
+                        setRecaptchaVerified(false);
                       }
                     }}
                     required
@@ -748,18 +752,31 @@ const handleConsultationSubmit = async (consultationData) => {
                 </div>
                 
                 {/* Firebase reCAPTCHA container */}
-                <div id="recaptcha-container" style={{display: 'none'}}></div>
+                <div id="recaptcha-container"></div>
                 
                 {!otpVerified && mobile.length === 10 && (
-                  <button 
-                    type="button" 
-                    onClick={handleSendOtp} 
-                    className="otp-button"
-                    disabled={isSendingOtp || cooldown > 0}
-                    style={{marginTop: '10px', width: '100%'}}
-                  >
-                    {isSendingOtp ? 'Sending...' : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
-                  </button>
+                  <>
+                    <div className="recaptcha-status">
+                      {recaptchaVerified ? (
+                        <span className="recaptcha-verified">
+                          ✓ reCAPTCHA verified
+                        </span>
+                      ) : (
+                        <span className="recaptcha-pending">
+                          ⏳ Please complete reCAPTCHA verification
+                        </span>
+                      )}
+                    </div>
+                    <button 
+                      type="button" 
+                      onClick={handleSendOtp} 
+                      className="otp-button"
+                      disabled={isSendingOtp || cooldown > 0}
+                      style={{marginTop: '10px', width: '100%'}}
+                    >
+                      {isSendingOtp ? 'Sending...' : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
+                    </button>
+                  </>
                 )}
               </div>
 
