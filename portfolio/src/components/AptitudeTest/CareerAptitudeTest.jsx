@@ -6,8 +6,6 @@ import './AptitudeTest.css';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import axios from 'axios';
-
-// Firebase imports
 import { signInWithPhoneNumber, RecaptchaVerifier } from "firebase/auth";
 import { auth } from "../../firebase";
 
@@ -266,8 +264,23 @@ const CareerAptitudeTest = () => {
   const handleFormSubmit = async (e) => {
     e.preventDefault();
     
+    // Enhanced validation
     if (!otpVerified) {
-      alert('Please verify your mobile number first');
+      if (!otpSent) {
+        toast.error("Please send OTP first by entering your mobile number");
+      } else {
+        toast.error("Please verify your mobile number with the OTP sent to your device");
+      }
+      return;
+    }
+    
+    if (!formData.name.trim()) {
+      toast.error("Please enter your full name");
+      return;
+    }
+    
+    if (!formData.className) {
+      toast.error("Please select your class/grade");
       return;
     }
     
@@ -626,8 +639,18 @@ const CareerAptitudeTest = () => {
         toast.error("Invalid OTP. Please check and try again.");
       } else if (error.code === "auth/code-expired") {
         toast.error("OTP has expired. Please request a new OTP.");
+        // Reset states when OTP expires
+        setOtpSent(false);
+        setOtpVerified(false);
+        setOtp('');
+        setConfirmationResult(null);
       } else if (error.code === "auth/too-many-requests") {
         toast.error("Too many attempts. Please try again later.");
+        // Reset states after too many attempts
+        setOtpSent(false);
+        setOtpVerified(false);
+        setOtp('');
+        setConfirmationResult(null);
       } else {
         toast.error("OTP verification failed. Please try again.");
       }
@@ -840,9 +863,16 @@ const handleConsultationSubmit = async (consultationData) => {
               <button 
                 type="submit" 
                 className="submit-button"
-                disabled={!otpVerified}
+                disabled={!otpVerified || !formData.name.trim() || !formData.className}
+                title={!otpVerified ? "Please verify your mobile number first" : !formData.name.trim() ? "Please enter your name" : !formData.className ? "Please select your class" : "View your career test results"}
               >
-                View Result
+                {!otpVerified ? (
+                  <span>
+                    {otpSent ? "🔒 Verify OTP to View Result" : "🔒 Send OTP First"}
+                  </span>
+                ) : (
+                  <span>🎯 View My Result</span>
+                )}
               </button>
             </form>
           </div>

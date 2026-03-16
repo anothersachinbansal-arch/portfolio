@@ -2030,3 +2030,28 @@
   transform: none;
   box-shadow: none;
 }
+
+/* Enhanced Submit Button Styles */
+.submit-button:disabled {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  color: #ecf0f1;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+  opacity: 0.7;
+  position: relative;
+}
+
+.submit-button:disabled:hover {
+  background: linear-gradient(135deg, #95a5a6, #7f8c8d);
+  transform: none;
+  box-shadow: none;
+}
+
+.submit-button:disabled span {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.95rem;
+}
