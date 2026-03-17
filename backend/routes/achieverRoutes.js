@@ -1,6 +1,6 @@
 import express from "express";
 import multer from "multer";
-// import { protect } from "../middleware/authMiddleware.js"; // enable later if needed
+import { protect } from "../middleware/authMiddleware.js";
 import {
   createAchiever,
   listAchievers,
@@ -29,23 +29,22 @@ router.get("/:id", async (req, res, next) => {
 });
 
 // Admin: create achiever (multipart/form-data)
-// Add 'protect' when you want to require JWT: [protect, upload.single("image")]
-router.post("/", upload.single("image"), createAchiever);
+router.post("/", [protect, upload.single("image")], createAchiever);
 
 // Admin: delete achiever
-router.delete("/:id", deleteAchiever);
+router.delete("/:id", [protect], deleteAchiever);
 
 // Admin: update achiever (replace image or fields)
 router.patch(
   "/:id",
-  upload.single("image"),
+  [protect, upload.single("image")],
   updateAchiever
 );
 
 // Also allow PUT for clients that use it
 router.put(
   "/:id",
-  upload.single("image"),
+  [protect, upload.single("image")],
   updateAchiever
 );
 
