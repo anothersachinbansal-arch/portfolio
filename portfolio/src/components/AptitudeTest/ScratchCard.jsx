@@ -155,7 +155,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
 
   ctx.globalCompositeOperation = 'destination-out';
   ctx.beginPath();
-  ctx.arc(x, y, 25 * dpr, 0, Math.PI * 2);
+  ctx.arc(x, y, 12 * dpr, 0, Math.PI * 2);
   ctx.fill();
 };
 
@@ -174,7 +174,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
   const y = (clientY - rect.top) * dpr;
 
   ctx.globalCompositeOperation = 'destination-out';
-  ctx.lineWidth = 50 * dpr;
+  ctx.lineWidth = 20 * dpr; // 50 tha, 20 kiya
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
