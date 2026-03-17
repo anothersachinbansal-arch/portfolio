@@ -310,25 +310,19 @@ const CareerAptitudeTest = () => {
         });
       }, 1000);
 
-    } catch (error) {
-      console.error("OTP Error:", error.code, error.message);
+   } catch (error) {
+  // Error pe instance clear karo
+  if (window.recaptchaVerifier) {
+    window.recaptchaVerifier.clear();
+    window.recaptchaVerifier = null;
+  }
 
-      // Error ke baad instance hamesha clear karo — warna dobara OTP nahi jayega
-      if (window.recaptchaVerifier) {
-        window.recaptchaVerifier.clear();
-        window.recaptchaVerifier = null;
-      }
-
-      if (error.code === 'auth/too-many-requests') {
-        toast.error("Too many requests. Please wait a few minutes and try again.");
-      } else if (error.code === 'auth/invalid-phone-number') {
-        toast.error("Invalid phone number. Please check and retry.");
-      } else if (error.code === 'auth/quota-exceeded') {
-        toast.error("SMS quota exceeded. Try again later.");
-      } else {
-        toast.error("Failed to send OTP. Please try again.");
-      }
-    }
+  // Exact error screen pe dikhao — debugging ke liye
+  toast.error(`Error: ${error.code} | ${error.message}`, {
+    position: "top-center",
+    autoClose: 15000, // 15 second tak dikhega padhne ke liye
+  });
+}
 
     setIsSendingOtp(false);
   };
