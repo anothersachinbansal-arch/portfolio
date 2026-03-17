@@ -113,7 +113,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
 
     ctx.globalCompositeOperation = 'destination-out';
     ctx.beginPath();
-    ctx.arc(x, y, 12, 0, Math.PI * 2); // radius 12 logical pixels — finger ke neeche precise
+    ctx.arc(x, y, 17, 0, Math.PI * 2); // radius 12 logical pixels — finger ke neeche precise
     ctx.fill();
   };
 
@@ -124,7 +124,7 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
     const { x, y } = getCoords(e);
 
     ctx.globalCompositeOperation = 'destination-out';
-    ctx.lineWidth = 24; // logical pixels mein — chhota aur precise
+    ctx.lineWidth = 32; // logical pixels mein — chhota aur precise
     ctx.lineCap = 'round';
     ctx.lineJoin = 'round';
 
