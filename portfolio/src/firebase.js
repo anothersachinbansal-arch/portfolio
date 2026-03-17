@@ -5,7 +5,7 @@ import { getAuth } from "firebase/auth";
 
 const firebaseConfig = {
   apiKey: "AIzaSyDI34cJ_jMMjDgM-kr1vfoZlHBoPgTnAkM",
-  authDomain: "career-test-b0769.firebaseapp.com",
+  authDomain: "thesachinbansal.in",
   projectId: "career-test-b0769",
   storageBucket: "career-test-b0769.firebasestorage.app",
   messagingSenderId: "309231346456",
