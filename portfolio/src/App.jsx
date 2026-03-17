@@ -1,5 +1,7 @@
 import './App.css'
 import Navbar from './components/Navbar/Navbar'
+import Breadcrumbs from './components/Breadcrumbs/Breadcrumbs'
+import FAQ from './components/FAQ/FAQ'
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
 import Login from './components/Login/Login'
 import Hero from './components/Hero/Hero'
@@ -26,6 +28,7 @@ function App() {
       <BrowserRouter>
         <ReviewsProvider>
           <Navbar />
+          <Breadcrumbs />
           <Routes>
             <Route path="/" element={<>
               <Hero />

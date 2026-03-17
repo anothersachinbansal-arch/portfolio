@@ -1,6 +1,20 @@
 # robots.txt
 
 User-agent: *
-Disallow:
+Allow: /
+Disallow: /admin
+Disallow: /admin-panel
+Disallow: /login
 
-Sitemap: https://portfolio-three-jet-53.vercel.app/sitemap.xml
+# Crawl-delay for respectful crawling
+Crawl-delay: 1
+
+# Allow specific bots
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
+# Sitemap location
+Sitemap: https://thesachinbansal.in/sitemap.xml

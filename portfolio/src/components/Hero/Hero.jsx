@@ -102,7 +102,7 @@ const Hero = () => {
             <div key={index} className={className}>
               <div className="hero-container">
                 <div className="hero-left">
-                  <h1>{slide.title}</h1>
+                  <h2>{slide.title}</h2>
                 </div>
                 <div className="hero-right">
                   <img src={slide.img} alt={slide.alt} className="slide-img" loading={index === 0 ? "eager" : "lazy"} />

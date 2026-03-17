@@ -57,7 +57,7 @@
   .hero-left {
     flex: 1;
   }
-  .hero-left h1 {
+  .hero-left h2 {
     font-family: math;
     font-size: 3.5rem;
     font-weight: 700;
@@ -199,7 +199,7 @@
       text-align: center;
       height: auto;
     }
-    .hero-left h1 {
+    .hero-left h2 {
       font-size: 2.8rem;
     }
     .hero-right img {
@@ -212,7 +212,7 @@
   }
 
   @media (max-width: 576px) {
-    .hero-left h1 {
+    .hero-left h2 {
       font-size: 2rem;
     }
     .hero-section {

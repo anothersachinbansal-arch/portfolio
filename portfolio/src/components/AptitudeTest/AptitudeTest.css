@@ -52,7 +52,8 @@
 
 /* FAQ Section - Improved */
 .faq-section {
-  margin: 1.5rem auto;
+      background: #e7eaed;
+    margin: 1.5rem auto;
   max-width: 800px;
   width: 90%;
   padding: 0 1rem;
@@ -365,7 +366,7 @@
   min-height: 70vh;
 }
 
-.aptitude-test-container h1 {
+.aptitude-test-container h2 {
   text-align: center;
   color: #2c3e50;
   margin-bottom: 2rem;
