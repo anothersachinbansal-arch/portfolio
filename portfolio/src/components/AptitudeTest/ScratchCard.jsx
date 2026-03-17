@@ -138,98 +138,75 @@ const ScratchCard = ({ onReveal, onSubmit }) => {
   const isDrawing = React.useRef(false);
 
   const startScratching = (e) => {
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const x = ((e.clientX || e.touches[0].clientX) - rect.left) * dpr;
-    const y = ((e.clientY || e.touches[0].clientY) - rect.top) * dpr;
-    
-    lastPoint.current = { x, y };
-    isDrawing.current = true;
-    setIsScratching(true);
-    
-    // Draw initial circle at touch/click start
-    if (ctx) {
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.arc(x, y, 20 * dpr, 0, Math.PI * 2);
-      ctx.fill();
-    }
-  };
+  if (!canvas || !ctx) return;
+
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  const x = (clientX - rect.left) * dpr;
+  const y = (clientY - rect.top) * dpr;
+
+  lastPoint.current = { x, y };
+  isDrawing.current = true;
+  setIsScratching(true);
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.beginPath();
+  ctx.arc(x, y, 25 * dpr, 0, Math.PI * 2);
+  ctx.fill();
+};
 
   const scratch = (e) => {
-    if (!isScratching || !isDrawing.current) return;
-    
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-    const x = ((e.clientX || e.touches[0].clientX) - rect.left) * dpr;
-    const y = ((e.clientY || e.touches[0].clientY) - rect.top) * dpr;
+  if (!isScratching || !isDrawing.current || !ctx) return;
 
-    if (ctx) {
-      // Draw a line from last point to current point for smoother scratching
-      ctx.globalCompositeOperation = 'destination-out';
-      ctx.beginPath();
-      ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
-      
-      // Calculate distance between points
-      const distance = Math.sqrt(
-        Math.pow(x - lastPoint.current.x, 2) + 
-        Math.pow(y - lastPoint.current.y, 2)
-      );
-      
-      // Draw multiple circles along the line for smoother effect
-      const steps = Math.max(2, Math.ceil(distance / (5 * dpr)));
-      for (let i = 0; i <= steps; i++) {
-        const t = i / steps;
-        const cx = lastPoint.current.x + (x - lastPoint.current.x) * t;
-        const cy = lastPoint.current.y + (y - lastPoint.current.y) * t;
-        
-        // Vary the brush size slightly for a more natural feel
-        const radius = (20 * dpr) + Math.sin(Date.now() * 0.02) * (3 * dpr);
-        
-        if (i === 0) {
-          ctx.moveTo(cx + radius, cy);
-        } else {
-          ctx.lineTo(cx, cy);
-        }
-        
-        // Draw additional circles for smoother edges
-        ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      }
-      
-      ctx.strokeStyle = 'rgba(0,0,0,1)';
-      ctx.lineWidth = 40 * dpr; // Increased line width for better coverage
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.stroke();
-      
-      // Update last point
-      lastPoint.current = { x, y };
-      
-      // Check if enough area is scratched
-      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-      const pixels = imageData.data;
-      let transparentPixels = 0;
-      
-      for (let i = 0; i < pixels.length; i += 4) {
-        if (pixels[i + 3] === 0) {
-          transparentPixels++;
-        }
-      }
-      
-      const transparentRatio = transparentPixels / (canvas.width * canvas.height);
-      
-      if (transparentRatio > 0.4 && !isRevealed) {
-        setIsRevealed(true);
-        setShowConfetti(true);
-        onReveal();
-        
-        // Hide confetti after animation
-        setTimeout(() => setShowConfetti(false), 3000);
-      }
-    }
-    
-    setPosition({ x, y });
-  };
+  e.preventDefault(); // mobile pe scroll rokne ke liye
+
+  const rect = canvas.getBoundingClientRect();
+  const dpr = window.devicePixelRatio || 1;
+
+  const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+  const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+
+  const x = (clientX - rect.left) * dpr;
+  const y = (clientY - rect.top) * dpr;
+
+  ctx.globalCompositeOperation = 'destination-out';
+  ctx.lineWidth = 50 * dpr;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  // Smooth curve — last point aur current point ke beech midpoint se curve
+  const midX = (lastPoint.current.x + x) / 2;
+  const midY = (lastPoint.current.y + y) / 2;
+
+  ctx.beginPath();
+  ctx.moveTo(lastPoint.current.x, lastPoint.current.y);
+  ctx.quadraticCurveTo(lastPoint.current.x, lastPoint.current.y, midX, midY);
+  ctx.stroke();
+
+  lastPoint.current = { x, y };
+
+  // Scratched area check
+  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const pixels = imageData.data;
+  let transparentPixels = 0;
+
+  for (let i = 3; i < pixels.length; i += 4) {
+    if (pixels[i] === 0) transparentPixels++;
+  }
+
+  const transparentRatio = transparentPixels / (canvas.width * canvas.height);
+
+  if (transparentRatio > 0.4 && !isRevealed) {
+    setIsRevealed(true);
+    setShowConfetti(true);
+    onReveal();
+    setTimeout(() => setShowConfetti(false), 3000);
+  }
+};
 
   const endScratching = () => {
     isDrawing.current = false;
