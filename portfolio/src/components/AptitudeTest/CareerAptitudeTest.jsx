@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FaCheck, FaTimes, FaPrint, FaRedo, FaGift } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import ScratchCard from './ScratchCard';
@@ -77,12 +77,12 @@ const CareerAptitudeTest = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState({});
   const [scores, setScores] = useState({
-    R: 0, // Realistic
-    I: 0, // Investigative
-    A: 0, // Artistic
-    S: 0, // Social
-    E: 0, // Enterprising
-    C: 0  // Conventional
+    R: 0,
+    I: 0,
+    A: 0,
+    S: 0,
+    E: 0,
+    C: 0
   });
   const [showResults, setShowResults] = useState(false);
   const [showForm, setShowForm] = useState(false);
@@ -97,14 +97,23 @@ const CareerAptitudeTest = () => {
   const [otpVerified, setOtpVerified] = useState(false);
   const [otpError, setOtpError] = useState('');
   const [confirmationResult, setConfirmationResult] = useState(null);
-  const [recaptchaVerified, setRecaptchaVerified] = useState(false);
   const [cooldown, setCooldown] = useState(0);
   const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [testData, setTestData] = useState(null);
   const [showScratchCard, setShowScratchCard] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState(null);
-  
+
+  // ─── FIX: Component unmount hone pe recaptcha cleanup ───
+  useEffect(() => {
+    return () => {
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+    };
+  }, []);
+
   const toggleFaq = (index) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
   };
@@ -121,15 +130,12 @@ const CareerAptitudeTest = () => {
   };
 
   const handleAnswer = (answer) => {
-
-    // Update answers
     const newAnswers = {
       ...answers,
       [questionId]: answer
     };
     setAnswers(newAnswers);
 
-    // Update scores if answer is yes
     if (answer) {
       setScores({
         ...scores,
@@ -137,47 +143,38 @@ const CareerAptitudeTest = () => {
       });
     }
 
-    // Move to next question or category
     if (currentQuestionIndex < currentCategory.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else if (currentCategoryIndex < categories.length - 1) {
       setCurrentCategoryIndex(currentCategoryIndex + 1);
       setCurrentQuestionIndex(0);
     } else {
-      // All questions answered - show form before results
       setShowForm(true);
     }
   };
 
   const getCareerSuggestions = (showAll = false) => {
-    // Filter out categories with 0 score and sort by score (highest first)
     const sortedScores = Object.entries(scores)
       .filter(([_, score]) => score > 0)
       .sort((a, b) => b[1] - a[1]);
-      
+
     const allCategories = sortedScores.map(item => item[0]);
     const nonZeroCategories = allCategories.filter(cat => scores[cat] > 0);
-    
-    // Determine how many categories to show
+
     let categoriesToShow = [];
-    
+
     if (nonZeroCategories.length === 0) {
-      // If no categories have scores, show all
       categoriesToShow = allCategories;
     } else if (nonZeroCategories.length === 1) {
-      // If only 1 category has a score, show only that one
       categoriesToShow = nonZeroCategories;
     } else if (nonZeroCategories.length <= 3) {
-      // If 2-3 categories have scores, show top 2
       categoriesToShow = nonZeroCategories.slice(0, 2);
     } else if (Object.values(scores).every(score => score === 4)) {
-      // If all categories have perfect scores, show all
       categoriesToShow = allCategories;
     } else {
-      // Default: show top 2
       categoriesToShow = nonZeroCategories.slice(0, 2);
     }
-    
+
     const careerData = {
       'R': {
         title: 'The Maker (Realistic)',
@@ -261,10 +258,99 @@ const CareerAptitudeTest = () => {
     }));
   };
 
+  // ─── FIX: setupRecaptcha — invisible mode, div se attach, ek baar banana ───
+  const setupRecaptcha = () => {
+    // Pehle se exist karta hai toh dobara mat banao
+    if (window.recaptchaVerifier) return;
+
+    // 'recaptcha-container' div se attach — yeh hamesha DOM mein hona chahiye
+    // size: 'invisible' — mobile pe visible captcha render nahi hota, yahi root cause tha
+    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+      size: 'invisible',
+      callback: () => {
+        // Auto-verified, kuch nahi karna
+        console.log('reCAPTCHA auto-verified');
+      },
+      'expired-callback': () => {
+        // Expire hone pe instance reset karo taaki agli baar fresh bane
+        if (window.recaptchaVerifier) {
+          window.recaptchaVerifier.clear();
+          window.recaptchaVerifier = null;
+        }
+      }
+    });
+  };
+
+  // ─── FIX: handleSendOtp — clean flow, error pe proper reset ───
+  const handleSendOtp = async () => {
+    if (!mobile || mobile.length !== 10) {
+      toast.error("Enter valid 10-digit mobile number");
+      return;
+    }
+
+    setIsSendingOtp(true);
+
+    try {
+      // Setup karo — already hai toh skip ho jayega
+      setupRecaptcha();
+
+      const phoneNumber = "+91" + mobile;
+      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+
+      setConfirmationResult(confirmation);
+      setOtpSent(true);
+      toast.success("OTP sent successfully!");
+
+      // Cooldown timer
+      setCooldown(60);
+      const timer = setInterval(() => {
+        setCooldown(prev => {
+          if (prev <= 1) { clearInterval(timer); return 0; }
+          return prev - 1;
+        });
+      }, 1000);
+
+    } catch (error) {
+      console.error("OTP Error:", error.code, error.message);
+
+      // Error ke baad instance hamesha clear karo — warna dobara OTP nahi jayega
+      if (window.recaptchaVerifier) {
+        window.recaptchaVerifier.clear();
+        window.recaptchaVerifier = null;
+      }
+
+      if (error.code === 'auth/too-many-requests') {
+        toast.error("Too many requests. Please wait a few minutes and try again.");
+      } else if (error.code === 'auth/invalid-phone-number') {
+        toast.error("Invalid phone number. Please check and retry.");
+      } else if (error.code === 'auth/quota-exceeded') {
+        toast.error("SMS quota exceeded. Try again later.");
+      } else {
+        toast.error("Failed to send OTP. Please try again.");
+      }
+    }
+
+    setIsSendingOtp(false);
+  };
+
+  // ─── FIX: handleResendOtp — purana instance clear karke fresh OTP bhejo ───
+  const handleResendOtp = async () => {
+    // Purana recaptcha instance zaroor clear karo
+    if (window.recaptchaVerifier) {
+      window.recaptchaVerifier.clear();
+      window.recaptchaVerifier = null;
+    }
+    // State reset
+    setOtpSent(false);
+    setOtp('');
+    setConfirmationResult(null);
+    // Fresh OTP
+    await handleSendOtp();
+  };
+
   const handleFormSubmit = async (e) => {
     e.preventDefault();
-    
-    // Enhanced validation
+
     if (!otpVerified) {
       if (!otpSent) {
         toast.error("Please send OTP first by entering your mobile number");
@@ -273,28 +359,26 @@ const CareerAptitudeTest = () => {
       }
       return;
     }
-    
+
     if (!formData.name.trim()) {
       toast.error("Please enter your full name");
       return;
     }
-    
+
     if (!formData.className) {
       toast.error("Please select your class/grade");
       return;
     }
-    
-    // Store test data
+
     const currentTestData = {
       name: formData.name,
       phone: '+91' + mobile,
       className: formData.className,
       scores: scores
     };
-    
+
     setTestData(currentTestData);
-    
-    // Format results string
+
     const resultsString = [
       `Realistic (The Maker): ${scores.R}/4`,
       `Investigative (The Analyst): ${scores.I}/4`,
@@ -304,312 +388,25 @@ const CareerAptitudeTest = () => {
       `Conventional (The Organizer): ${scores.C}/4`
     ].join("\n");
 
-    // Show results immediately
     setShowForm(false);
     setShowResults(true);
     revealScratchCard();
 
     try {
-      // Send email with test details using /send-mail-result route
       await axios.post(
         "https://portfolio-x0gj.onrender.com/send-mail-result",
         {
           name: currentTestData.name,
           phone: currentTestData.phone,
           className: currentTestData.className,
-          score: Object.values(scores).reduce((a, b) => a + b, 0), // total score
-          total: 24, // max possible score (6 categories × 4 questions each)
+          score: Object.values(scores).reduce((a, b) => a + b, 0),
+          total: 24,
           results: resultsString
         }
       );
     } catch (error) {
       console.error("Mail error:", error);
-      // Don't show error to user since we still want to show results
     }
-  };
-
-  const setupRecaptcha = async () => {
-    try {
-      console.log("=== RECAPTCHA SETUP START ===");
-      console.log("User Agent:", navigator.userAgent);
-      console.log("Mobile detected:", /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent));
-      
-      // Clear existing recaptcha verifier if it exists
-      if (window.recaptchaVerifier) {
-        console.log("Clearing existing reCAPTCHA verifier");
-        try {
-          await window.recaptchaVerifier.clear();
-        } catch (clearError) {
-          console.warn("Error clearing reCAPTCHA:", clearError);
-        }
-        window.recaptchaVerifier = null;
-      }
-
-      // Clear container completely
-      const container = document.getElementById('recaptcha-container');
-      if (container) {
-        container.innerHTML = '';
-        // Always show reCAPTCHA container for better visibility
-        container.style.display = 'block';
-        container.style.textAlign = 'center';
-        container.style.margin = '10px 0';
-        container.style.minHeight = '78px'; // Ensure space for reCAPTCHA
-        console.log("Setting up reCAPTCHA container visibility");
-      }
-
-      // Wait for cleanup to complete
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      // Always use visible reCAPTCHA for better mobile compatibility
-      console.log("Creating visible reCAPTCHA verifier for all devices");
-      window.recaptchaVerifier = new RecaptchaVerifier(
-        auth,
-        "recaptcha-container",
-        {
-          size: "normal",
-          theme: "light",
-          callback: (response) => {
-            console.log("reCAPTCHA solved successfully:", response);
-            setRecaptchaVerified(true);
-            toast.success("reCAPTCHA verified! Sending OTP...");
-            
-            // Add visual feedback for mobile
-            setTimeout(() => {
-              const recaptchaElement = document.querySelector('#recaptcha-container iframe');
-              if (recaptchaElement) {
-                recaptchaElement.style.border = '2px solid #28a745';
-                recaptchaElement.style.borderRadius = '4px';
-              }
-            }, 100);
-          },
-          'expired-callback': () => {
-            console.error("reCAPTCHA expired");
-            setRecaptchaVerified(false);
-            toast.error("reCAPTCHA expired. Please try again.");
-            
-            // Remove visual feedback on expiry
-            setTimeout(() => {
-              const recaptchaElement = document.querySelector('#recaptcha-container iframe');
-              if (recaptchaElement) {
-                recaptchaElement.style.border = '';
-                recaptchaElement.style.borderRadius = '';
-              }
-            }, 100);
-          }
-        }
-      );
-      
-      // Try to render reCAPTCHA
-      try {
-        await window.recaptchaVerifier.render();
-        console.log("reCAPTCHA rendered successfully - Type: Visible");
-        
-        // Additional wait for mobile compatibility and ensure proper display
-        await new Promise(resolve => setTimeout(resolve, 1000));
-        
-        // Force reCAPTCHA to be visible and properly styled
-        const recaptchaElement = document.querySelector('#recaptcha-container iframe');
-        if (recaptchaElement) {
-          recaptchaElement.style.display = 'block';
-          recaptchaElement.style.visibility = 'visible';
-          recaptchaElement.style.opacity = '1';
-          console.log("reCAPTCHA iframe visibility forced");
-        }
-        
-      } catch (renderError) {
-        console.error("reCAPTCHA render error:", renderError);
-        console.error("Render error details:", renderError.message);
-        console.error("Render error stack:", renderError.stack);
-        
-        // Show detailed error for debugging
-        toast.error(`reCAPTCHA Error: ${renderError.message}. Please refresh the page.`, {
-          position: "top-center",
-          autoClose: 8000,
-        });
-        
-        // Show English prompt for reCAPTCHA failure
-        setTimeout(() => {
-          if (confirm("reCAPTCHA verification failed. Would you like to refresh the page and try again?")) {
-            window.location.reload();
-          }
-        }, 1000);
-        
-        // Clean up failed reCAPTCHA
-        if (window.recaptchaVerifier) {
-          try {
-            await window.recaptchaVerifier.clear();
-          } catch (e) {
-            console.warn("Error clearing failed reCAPTCHA:", e);
-          }
-          window.recaptchaVerifier = null;
-        }
-        
-        throw new Error(`reCAPTCHA render failed: ${renderError.message}`);
-      }
-      
-      console.log("=== RECAPTCHA SETUP SUCCESS ===");
-      
-    } catch (error) {
-      console.error("=== RECAPTCHA SETUP FAILED ===");
-      console.error("Setup error:", error);
-      console.error("Setup error message:", error.message);
-      console.error("Setup error stack:", error.stack);
-      
-      // Show detailed error for debugging
-      toast.error(`reCAPTCHA Setup Failed: ${error.message}. Please refresh the page.`, {
-        position: "top-center",
-        autoClose: 8000,
-      });
-      
-      // Show English prompt for reCAPTCHA failure
-      setTimeout(() => {
-        if (confirm("reCAPTCHA setup failed. Would you like to refresh the page and try again?")) {
-          window.location.reload();
-        }
-      }, 1000);
-      
-      // Clean up on error
-      if (window.recaptchaVerifier) {
-        try {
-          window.recaptchaVerifier.clear();
-        } catch (e) {
-          console.warn("Error cleaning up reCAPTCHA:", e);
-        }
-        // Don't set to null for any device - keep it available for retry
-        // This prevents the checkbox from disappearing on error
-        window.recaptchaVerifier = null;
-      }
-      throw new Error(`reCAPTCHA setup failed: ${error.message}`);
-    }
-  };
-
-  const handleSendOtp = async () => {
-    if (!mobile || mobile.length !== 10) {
-      toast.error("Enter valid mobile number");
-      return;
-    }
-
-    setIsSendingOtp(true);
-
-    try {
-      // Setup reCAPTCHA with proper error handling
-      await setupRecaptcha();
-      
-      // Verify reCAPTCHA is properly initialized
-      if (!window.recaptchaVerifier) {
-        throw new Error("reCAPTCHA not properly initialized");
-      }
-
-      // Additional delay for mobile compatibility
-      await new Promise(resolve => setTimeout(resolve, 500));
-
-      const phoneNumber = "+91" + mobile;
-      const appVerifier = window.recaptchaVerifier;
-
-      console.log("Sending OTP to:", phoneNumber);
-      console.log("App verifier type:", typeof appVerifier);
-      console.log("App verifier exists:", !!appVerifier);
-
-      // Enhanced error handling for signInWithPhoneNumber
-      let confirmation;
-      try {
-        confirmation = await signInWithPhoneNumber(
-          auth,
-          phoneNumber,
-          appVerifier
-        );
-      } catch (signInError) {
-        console.error("signInWithPhoneNumber error:", signInError);
-        
-        // Show refresh alert for problematic devices
-        if (signInError.message && signInError.message.includes("captcha")) {
-          toast.error("reCAPTCHA verification failed. Please refresh the page and try again.", {
-            position: "top-center",
-            autoClose: 5000,
-          });
-          
-          // Show English prompt for captcha failure
-          setTimeout(() => {
-            if (confirm("reCAPTCHA verification failed. Would you like to refresh the page and try again?")) {
-              window.location.reload();
-            }
-          }, 1000);
-        } else if (signInError.message && signInError.message.includes("network")) {
-          toast.error("Network error. Please refresh the page and check your connection.", {
-            position: "top-center",
-            autoClose: 5000,
-          });
-          
-          // Show English prompt for network failure
-          setTimeout(() => {
-            if (confirm("Network error occurred. Would you like to refresh the page and try again?")) {
-              window.location.reload();
-            }
-          }, 1000);
-        }
-        
-        // Clean up reCAPTCHA on sign-in error
-        if (window.recaptchaVerifier) {
-          try {
-            await window.recaptchaVerifier.clear();
-          } catch (clearError) {
-            console.warn("Error clearing reCAPTCHA after sign-in error:", clearError);
-          }
-          // Don't set to null for any device - keep it available for retry
-          // This prevents the checkbox from disappearing on error
-          window.recaptchaVerifier = null;
-        }
-        
-        // Reset reCAPTCHA verified state on error
-        setRecaptchaVerified(false);
-        
-        throw signInError;
-      }
-
-      // Store confirmation result
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      toast.success("OTP sent successfully");
-
-      // Start cooldown timer
-      setCooldown(60);
-      const timer = setInterval(() => {
-        setCooldown(prev => {
-          if (prev <= 1) {
-            clearInterval(timer);
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-
-    } catch (error) {
-      console.error("OTP Send Error:", error);
-      console.error("Error Code:", error.code);
-      console.error("Error Message:", error.message);
-      console.error("Error Stack:", error.stack);
-
-      // Enhanced error handling for mobile compatibility
-      if (error.code === "auth/too-many-requests") {
-        toast.error("Too many requests. Please wait a few minutes and try again.");
-      } else if (error.code === "auth/invalid-phone-number") {
-        toast.error("Invalid phone number format. Please check your number.");
-      } else if (error.code === "auth/missing-recaptcha-token") {
-        toast.error("reCAPTCHA verification failed. Please refresh and try again.");
-      } else if (error.code === "auth/missing-client-type") {
-        toast.error("Firebase client type missing. Please check Firebase configuration.");
-      } else if (error.code === "auth/quota-exceeded") {
-        toast.error("SMS quota exceeded. Please try again later.");
-      } else if (error.message && error.message.includes("captcha")) {
-        toast.error("reCAPTCHA verification failed. Please refresh the page and try again.");
-      } else if (error.message && error.message.includes("network")) {
-        toast.error("Network error. Please check your internet connection and try again.");
-      } else {
-        toast.error(`Failed to send OTP: ${error.message || "Unknown error occurred"}`);
-      }
-    }
-
-    setIsSendingOtp(false);
   };
 
   const handleInputChange = (e) => {
@@ -618,35 +415,26 @@ const CareerAptitudeTest = () => {
       ...formData,
       [name]: value
     });
-    // Reset reCAPTCHA state when mobile number changes
-    if (name === 'phone' || e.target.type === 'tel') {
-      setRecaptchaVerified(false);
-    }
   };
 
   const handleVerifyOtp = async () => {
     try {
-      const result = await confirmationResult.confirm(otp);
-      const user = result.user;
+      await confirmationResult.confirm(otp);
       setOtpVerified(true);
-      toast.success("OTP verified");
+      toast.success("OTP verified successfully!");
     } catch (error) {
-      console.error("OTP Verify Error:", error);
-      console.error("Error Code:", error.code);
-      console.error("Error Message:", error.message);
+      console.error("OTP Verify Error:", error.code, error.message);
 
       if (error.code === "auth/invalid-verification-code") {
         toast.error("Invalid OTP. Please check and try again.");
       } else if (error.code === "auth/code-expired") {
         toast.error("OTP has expired. Please request a new OTP.");
-        // Reset states when OTP expires
         setOtpSent(false);
         setOtpVerified(false);
         setOtp('');
         setConfirmationResult(null);
       } else if (error.code === "auth/too-many-requests") {
         toast.error("Too many attempts. Please try again later.");
-        // Reset states after too many attempts
         setOtpSent(false);
         setOtpVerified(false);
         setOtp('');
@@ -661,56 +449,49 @@ const CareerAptitudeTest = () => {
     setShowScratchCard(true);
   };
 
+  const handleConsultationSubmit = async (consultationData) => {
+    if (!testData) return;
 
+    const resultsString = [
+      `Realistic (The Maker): ${scores.R}/4`,
+      `Investigative (The Analyst): ${scores.I}/4`,
+      `Artistic (The Creator): ${scores.A}/4`,
+      `Social (The Helper): ${scores.S}/4`,
+      `Enterprising (The Persuader): ${scores.E}/4`,
+      `Conventional (The Organizer): ${scores.C}/4`
+    ].join('\n');
 
+    try {
+      await axios.post(
+        "https://portfolio-x0gj.onrender.com/send-mail",
+        {
+          name: testData.name,
+          phone: testData.phone,
+          className: testData.className,
+          consultationDate: consultationData.date,
+          consultationTime: consultationData.time,
+          score: Object.values(scores).reduce((a, b) => a + b, 0),
+          total: 24,
+          results: resultsString
+        }
+      );
 
-const handleConsultationSubmit = async (consultationData) => {
-  if (!testData) return;
+      toast.success("Your session has been booked successfully! Redirecting...", {
+        position: "top-center",
+        autoClose: 3000,
+      });
 
-  // Format results
-  const resultsString = [
-    `Realistic (The Maker): ${scores.R}/4`,
-    `Investigative (The Analyst): ${scores.I}/4`,
-    `Artistic (The Creator): ${scores.A}/4`,
-    `Social (The Helper): ${scores.S}/4`,
-    `Enterprising (The Persuader): ${scores.E}/4`,
-    `Conventional (The Organizer): ${scores.C}/4`
-  ].join('\n');
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 3000);
 
-  try {
-    // Send consultation booking email using /send-mail route
-    await axios.post(
-      "https://portfolio-x0gj.onrender.com/send-mail",
-      {
-        name: testData.name,
-        phone: testData.phone,
-        className: testData.className,
-        consultationDate: consultationData.date,
-        consultationTime: consultationData.time,
-        score: Object.values(scores).reduce((a, b) => a + b, 0), // total score
-        total: 24, // max possible score
-        results: resultsString
-      }
-    );
+    } catch (error) {
+      console.error("Error booking consultation:", error);
+      toast.error('Failed to book consultation. Please try again.');
+    }
+  };
 
-    // Show success message
-    toast.success("Your session has been booked successfully! Redirecting...", {
-      position: "top-center",
-      autoClose: 3000,
-    });
-
-    // Redirect after 3 seconds
-    setTimeout(() => {
-      window.location.href = "/"; // Or your desired redirect URL
-    }, 3000);
-
-  } catch (error) {
-    console.error("Error booking consultation:", error);
-    toast.error('Failed to book consultation. Please try again.');
-  }
-};
-
-  // Show form before showing results
+  // ─── FORM VIEW ───
   if (showForm) {
     return (
       <>
@@ -718,6 +499,7 @@ const handleConsultationSubmit = async (consultationData) => {
           <div className="form-container">
             <h2>Please provide your details to view results</h2>
             <form onSubmit={handleFormSubmit}>
+
               <div className="form-group">
                 <label htmlFor="name">Full Name</label>
                 <i className="fas fa-user"></i>
@@ -731,7 +513,7 @@ const handleConsultationSubmit = async (consultationData) => {
                   placeholder="Enter your full name"
                 />
               </div>
-              
+
               <div className="form-group">
                 <label>Mobile Number (with WhatsApp)</label>
                 <div className="mobile-input">
@@ -743,8 +525,6 @@ const handleConsultationSubmit = async (consultationData) => {
                       const value = e.target.value.replace(/\D/g, '');
                       if (value.length <= 10) {
                         setMobile(value);
-                        // Reset reCAPTCHA state when mobile number changes
-                        setRecaptchaVerified(false);
                       }
                     }}
                     required
@@ -752,33 +532,27 @@ const handleConsultationSubmit = async (consultationData) => {
                     disabled={otpVerified}
                   />
                 </div>
-                
-                {/* Firebase reCAPTCHA container */}
+
+                {/*
+                  FIX: recaptcha-container — hamesha DOM mein rehna chahiye, conditionally render mat karo.
+                  Invisible mode hai toh user ko dikhega nahi, Firebase internally use karega.
+                */}
                 <div id="recaptcha-container"></div>
-                
+
                 {!otpVerified && mobile.length === 10 && (
-                  <>
-                    <div className="recaptcha-status">
-                      {recaptchaVerified ? (
-                        <span className="recaptcha-verified">
-                          ✓ reCAPTCHA verified
-                        </span>
-                      ) : (
-                        <span className="recaptcha-pending">
-                          ⏳ Please complete reCAPTCHA verification
-                        </span>
-                      )}
-                    </div>
-                    <button 
-                      type="button" 
-                      onClick={handleSendOtp} 
-                      className="otp-button"
-                      disabled={isSendingOtp || cooldown > 0}
-                      style={{marginTop: '10px', width: '100%'}}
-                    >
-                      {isSendingOtp ? 'Sending...' : cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Send OTP'}
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={handleSendOtp}
+                    className="otp-button"
+                    disabled={isSendingOtp || cooldown > 0}
+                    style={{ marginTop: '10px', width: '100%' }}
+                  >
+                    {isSendingOtp
+                      ? 'Sending...'
+                      : cooldown > 0
+                      ? `Resend OTP in ${cooldown}s`
+                      : 'Send OTP'}
+                  </button>
                 )}
               </div>
 
@@ -798,8 +572,8 @@ const handleConsultationSubmit = async (consultationData) => {
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
                     />
-                    <button 
-                      type="button" 
+                    <button
+                      type="button"
                       onClick={handleVerifyOtp}
                       className="verify-button"
                       disabled={otp.length !== 6}
@@ -808,9 +582,10 @@ const handleConsultationSubmit = async (consultationData) => {
                     </button>
                   </div>
                   <div className="resend-container">
-                    <button 
-                      type="button" 
-                      onClick={handleSendOtp}
+                    {/* FIX: Resend pe handleResendOtp use karo — pehle clear, phir fresh OTP */}
+                    <button
+                      type="button"
+                      onClick={handleResendOtp}
                       className="resend-button"
                       disabled={cooldown > 0 || isSendingOtp}
                     >
@@ -827,57 +602,56 @@ const handleConsultationSubmit = async (consultationData) => {
                 </div>
               )}
 
-            <div className="form-group">
-  <label htmlFor="className">Class/Grade</label>
-  
- <select
-  id="className"
-  name="className"
-  value={formData.className}
-  onChange={handleInputChange}
-  required
-  style={{
-    width: '100%',          // full width of parent
-    padding: '10px',        // andar ka space
-    borderRadius: '5px',    // rounded corners
-    border: '1px solid #ccc', // light gray border
-    fontSize: '16px',       // text size
-    outline: 'none',        // focus outline remove
-    backgroundColor: '#f9f9f9', // light background
-    appearance: 'none',     // remove default arrow style (optional)
-    marginTop: '5px'        // thoda space label ke neeche
-  }}
->
-  <option value="" disabled>
-    Select your class/grade
-  </option>
-  <option value="10th">Class 10th</option>
-  <option value="11th">Class 11th</option>
-  <option value="12th">Class 12th</option>
-  <option value="Graduation">Graduation</option>
-</select>
+              <div className="form-group">
+                <label htmlFor="className">Class/Grade</label>
+                <select
+                  id="className"
+                  name="className"
+                  value={formData.className}
+                  onChange={handleInputChange}
+                  required
+                  style={{
+                    width: '100%',
+                    padding: '10px',
+                    borderRadius: '5px',
+                    border: '1px solid #ccc',
+                    fontSize: '16px',
+                    outline: 'none',
+                    backgroundColor: '#f9f9f9',
+                    appearance: 'none',
+                    marginTop: '5px'
+                  }}
+                >
+                  <option value="" disabled>Select your class/grade</option>
+                  <option value="10th">Class 10th</option>
+                  <option value="11th">Class 11th</option>
+                  <option value="12th">Class 12th</option>
+                  <option value="Graduation">Graduation</option>
+                </select>
+              </div>
 
-</div>
-
-              
-              <button 
-                type="submit" 
+              <button
+                type="submit"
                 className="submit-button"
                 disabled={!otpVerified || !formData.name.trim() || !formData.className}
-                title={!otpVerified ? "Please verify your mobile number first" : !formData.name.trim() ? "Please enter your name" : !formData.className ? "Please select your class" : "View your career test results"}
+                title={
+                  !otpVerified ? "Please verify your mobile number first"
+                  : !formData.name.trim() ? "Please enter your name"
+                  : !formData.className ? "Please select your class"
+                  : "View your career test results"
+                }
               >
                 {!otpVerified ? (
-                  <span>
-                    {otpSent ? "🔒 Verify OTP to View Result" : "🔒 Send OTP First"}
-                  </span>
+                  <span>{otpSent ? "🔒 Verify OTP to View Result" : "🔒 Send OTP First"}</span>
                 ) : (
                   <span>🎯 View My Result</span>
                 )}
               </button>
+
             </form>
           </div>
         </div>
-        
+
         <ToastContainer
           position="top-center"
           autoClose={5000}
@@ -893,6 +667,7 @@ const handleConsultationSubmit = async (consultationData) => {
     );
   }
 
+  // ─── RESULTS VIEW ───
   if (showResults) {
     const results = getCareerSuggestions();
     const allCategories = [
@@ -907,156 +682,141 @@ const handleConsultationSubmit = async (consultationData) => {
     const getScoreBarWidth = (score) => (score / 4) * 100;
     const getScoreColor = (score) => {
       const percentage = (score / 4) * 100;
-      if (percentage >= 75) return '#2ecc71'; // Green
-      if (percentage >= 50) return '#3498db'; // Blue
-      if (percentage >= 25) return '#f39c12'; // Orange
-      return '#e74c3c'; // Red
+      if (percentage >= 75) return '#2ecc71';
+      if (percentage >= 50) return '#3498db';
+      if (percentage >= 25) return '#f39c12';
+      return '#e74c3c';
     };
 
     return (
       <>
         <div className="career-results-container">
-        <h2 className="results-title">Your Career Aptitude Results</h2>
-        
-        {/* Scratch Card Section */}
-        <div style={{margin: '2rem 0', textAlign: 'center'}}>
-          {!showScratchCard ? (
-            <button 
-              className="show-gift-btn"
-              onClick={revealScratchCard}
-            >
-              <FaGift className="gift-icon" />
-              <span>Reveal Your Free Gift!</span>
+          <h2 className="results-title">Your Career Aptitude Results</h2>
+
+          <div style={{ margin: '2rem 0', textAlign: 'center' }}>
+            {!showScratchCard ? (
+              <button className="show-gift-btn" onClick={revealScratchCard}>
+                <FaGift className="gift-icon" />
+                <span>Reveal Your Free Gift!</span>
+              </button>
+            ) : (
+              <div className="scratch-card-wrapper">
+                <ScratchCard
+                  onReveal={() => console.log('Revealed!')}
+                  onSubmit={handleConsultationSubmit}
+                />
+              </div>
+            )}
+          </div>
+
+          <div className="results-summary">
+            <h3>Top Career Matches</h3>
+            <div className="top-results">
+              {results.map((result, index) => (
+                <div key={index} className="top-result-card">
+                  <div className="result-header">
+                    <h4>{result.title.split(' (')[0]}</h4>
+                    <span className="result-score">{result.score}/4</span>
+                  </div>
+                  <div className="progress-container">
+                    <div
+                      className="progress-bar"
+                      style={{
+                        width: `${getScoreBarWidth(result.score)}%`,
+                        backgroundColor: getScoreColor(result.score)
+                      }}
+                    ></div>
+                  </div>
+                  <p className="result-description">{result.description}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="all-categories">
+            <h3>Your Scores in All Categories</h3>
+            <div className="category-scores">
+              {allCategories.map((category, index) => (
+                <div key={index} className="category-score">
+                  <div className="category-info">
+                    <span className="category-name">{category.name}</span>
+                    <span className="category-score-value">{category.score}/4</span>
+                  </div>
+                  <div className="progress-container">
+                    <div
+                      className="progress-bar"
+                      style={{
+                        width: `${getScoreBarWidth(category.score)}%`,
+                        backgroundColor: getScoreColor(category.score)
+                      }}
+                    ></div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {results.map((result, index) => (
+            <div key={`details-${index}`} className="career-details">
+              <h3 className="career-title">{result.title}</h3>
+              <p className="career-description">{result.description}</p>
+              <div className="suggestions-grid">
+                <div className="suggestion-box courses">
+                  <h4>Suggested Bachelor Courses</h4>
+                  <ul>
+                    {result.courses.map((course, i) => (
+                      <li key={i}>
+                        <i className="fas fa-graduation-cap"></i>
+                        {course}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+                <div className="suggestion-box careers">
+                  <h4>Career Options</h4>
+                  <div className="career-tags">
+                    {result.careers.split(', ').map((career, i) => (
+                      <span key={i} className="career-tag">
+                        <i className="fas fa-briefcase"></i>
+                        {career}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          <div className="results-actions">
+            <button className="print-btn" onClick={() => window.print()}>
+              <i className="fas fa-print"></i> Print Results
             </button>
-          ) : (
-            <div className="scratch-card-wrapper">
-              <ScratchCard 
-                onReveal={() => console.log('Revealed!')}
-                onSubmit={handleConsultationSubmit}
-              />
-            </div>
-          )}
-        </div>
-        
-        <div className="results-summary">
-          <h3>Top Career Matches</h3>
-          <div className="top-results">
-            {results.map((result, index) => (
-              <div key={index} className="top-result-card">
-                <div className="result-header">
-                  <h4>{result.title.split(' (')[0]}</h4>
-                  <span className="result-score">{result.score}/4</span>
-                </div>
-                <div className="progress-container">
-                  <div 
-                    className="progress-bar" 
-                    style={{
-                      width: `${getScoreBarWidth(result.score)}%`,
-                      backgroundColor: getScoreColor(result.score)
-                    }}
-                  ></div>
-                </div>
-                <p className="result-description">{result.description}</p>
-              </div>
-            ))}
+            <button className="restart-btn" onClick={() => window.location.reload()}>
+              <i className="fas fa-redo"></i> Take Test Again
+            </button>
           </div>
         </div>
 
-        <div className="all-categories">
-          <h3>Your Scores in All Categories</h3>
-          <div className="category-scores">
-            {allCategories.map((category, index) => (
-              <div key={index} className="category-score">
-                <div className="category-info">
-                  <span className="category-name">{category.name}</span>
-                  <span className="category-score-value">{category.score}/4</span>
-                </div>
-                <div className="progress-container">
-                  <div 
-                    className="progress-bar" 
-                    style={{
-                      width: `${getScoreBarWidth(category.score)}%`,
-                      backgroundColor: getScoreColor(category.score)
-                    }}
-                  ></div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {results.map((result, index) => (
-          <div key={`details-${index}`} className="career-details">
-            <h3 className="career-title">{result.title}</h3>
-            <p className="career-description">{result.description}</p>
-            
-            <div className="suggestions-grid">
-              <div className="suggestion-box courses">
-                <h4>Suggested Bachelor Courses</h4>
-                <ul>
-                  {result.courses.map((course, i) => (
-                    <li key={i}>
-                      <i className="fas fa-graduation-cap"></i>
-                      {course}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              
-              <div className="suggestion-box careers">
-                <h4>Career Options</h4>
-                <div className="career-tags">
-                  {result.careers.split(', ').map((career, i) => (
-                    <span key={i} className="career-tag">
-                      <i className="fas fa-briefcase"></i>
-                      {career}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          </div>
-        ))}
-        
-        <div className="results-actions">
-          <button 
-            className="print-btn"
-            onClick={() => window.print()}
-          >
-            <i className="fas fa-print"></i> Print Results
-          </button>
-          <button 
-            className="restart-btn"
-            onClick={() => window.location.reload()}
-          >
-            <i className="fas fa-redo"></i> Take Test Again
-          </button>
-        </div>
-      </div>
-      
-      <ToastContainer
-        position="top-center"
-        autoClose={5000}
-        hideProgressBar={false}
-        newestOnTop={false}
-        closeOnClick
-        rtl={false}
-        pauseOnFocusLoss
-        draggable
-        pauseOnHover
-      />
+        <ToastContainer
+          position="top-center"
+          autoClose={5000}
+          hideProgressBar={false}
+          newestOnTop={false}
+          closeOnClick
+          rtl={false}
+          pauseOnFocusLoss
+          draggable
+          pauseOnHover
+        />
       </>
     );
   }
 
-  // Calculate total questions (6 categories * 4 questions each = 24 total)
   const totalQuestions = categories.length * categories[0].questions.length;
-  // Calculate current question number (0-23) + 1 for 1-based index
   const currentQuestionNumber = (currentCategoryIndex * categories[0].questions.length) + currentQuestionIndex + 1;
-  // Calculate progress percentage
   const progress = ((currentQuestionNumber / totalQuestions) * 100).toFixed(1);
 
-  // Show welcome message before starting the test
+  // ─── WELCOME VIEW ───
   if (!testStarted) {
     return (
       <div className="welcome-container">
@@ -1064,18 +824,18 @@ const handleConsultationSubmit = async (consultationData) => {
         <p className="welcome-text">
           Take our free, 5-minute scientific aptitude test to discover the Course and Career that actually fits your personality.
         </p>
-        
-        <button 
+
+        <button
           className="start-test-btn"
           onClick={handleStartTest}
-          style={{marginTop: '2rem'}}
+          style={{ marginTop: '2rem' }}
         >
-          Start my Free Test 
+          Start my Free Test
         </button>
-        
+
         <div className="faq-section">
           <h3>Frequently Asked Questions</h3>
-          
+
           {[
             {
               q: 'Is this like a school exam? Will it be hard?',
@@ -1099,16 +859,14 @@ const handleConsultationSubmit = async (consultationData) => {
               a: 'The basic test and your Summary Result are 100% FREE. We believe every student deserves clarity about their future. If you want a detailed roadmap or college admission help later, you can book a 1-on-1 session with Sachin Sir.'
             }
           ].map((faq, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={`faq-item ${openFaqIndex === index ? 'open' : ''}`}
               onClick={() => toggleFaq(index)}
             >
               <div className="faq-question">
                 <h4>Q{index + 1}: {faq.q}</h4>
-                <span className="faq-toggle">
-                  {openFaqIndex === index ? '−' : '+'}
-                </span>
+                <span className="faq-toggle">{openFaqIndex === index ? '−' : '+'}</span>
               </div>
               {openFaqIndex === index && (
                 <div className="faq-answer">
@@ -1129,14 +887,14 @@ const handleConsultationSubmit = async (consultationData) => {
     );
   }
 
+  // ─── TEST VIEW ───
   return (
     <div className="aptitude-test-container">
-      {/* Progress Bar */}
       <div className="progress-container" style={{ marginBottom: '20px' }}>
         <div className="progress-bar">
-          <div 
-            className="progress" 
-            style={{ 
+          <div
+            className="progress"
+            style={{
               width: `${progress}%`,
               height: '8px',
               backgroundColor: '#4a90e2',
@@ -1145,7 +903,7 @@ const handleConsultationSubmit = async (consultationData) => {
             }}
           ></div>
         </div>
-        <div style={{ 
+        <div style={{
           textAlign: 'right',
           fontSize: '0.9rem',
           color: '#666',
@@ -1154,23 +912,22 @@ const handleConsultationSubmit = async (consultationData) => {
           {progress}% Complete
         </div>
       </div>
-      
-      {/* Question Counter */}
+
       <div className="question-counter">
         Question {currentQuestionNumber} of {totalQuestions}
       </div>
-      
+
       <div className="question-container">
         <p className="question-text">{currentQuestion}</p>
-        
+
         <div className="answer-options">
-          <button 
+          <button
             className="answer-btn no"
             onClick={() => handleAnswer(false)}
           >
             No
           </button>
-          <button 
+          <button
             className="answer-btn yes"
             onClick={() => handleAnswer(true)}
           >
@@ -1178,7 +935,7 @@ const handleConsultationSubmit = async (consultationData) => {
           </button>
         </div>
       </div>
-      
+
       <ToastContainer
         position="top-center"
         autoClose={5000}
