@@ -93,7 +93,7 @@ const Footer = () => {
               <br />
               <a href="mailto:2sachinbansal@gmail.com">2sachinbansal@gmail.com</a>
               <br />
-              <a href="tel:9013049971" style={{ textDecoration: 'none', color: 'inherit' }}>9013049971</a>
+              <a href="tel:9013049971" style={{ textDecoration: 'none', color: '#e53e3e' }}>9013049971</a>
             </p>
           </div>
         </div>
