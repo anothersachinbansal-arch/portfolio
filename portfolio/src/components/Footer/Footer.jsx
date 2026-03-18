@@ -6,7 +6,7 @@ const Footer = () => {
     <>
       {/* WhatsApp Floating Button */}
       <a
-        href="https://wa.me/919876543210"
+        href="https://wa.me/9013049971"
         target="_blank"
         rel="noopener noreferrer"
         className="whatsapp-float"
@@ -20,7 +20,7 @@ const Footer = () => {
         {/* Left Image (Clickable) */}
         <div className="footer-image">
           <a
-            href="https://www.linkedin.com/in/thesachinbansal/" // Replace with your desired redirect
+            href="https://www.linkedin.com/in/sachin-bansal-8b6b31358?utm_source=share_via&utm_content=profile&utm_medium=member_android" // Replace with your desired redirect
             target="_blank"
             rel="noopener noreferrer"
           >
@@ -39,6 +39,15 @@ const Footer = () => {
             </p>
 
             <div className="social-links" aria-label="Social media links">
+              <a
+                href="https://www.linkedin.com/in/sachin-bansal-8b6b31358?utm_source=share_via&utm_content=profile&utm_medium=member_android"
+                aria-label="Visit our LinkedIn"
+                target="_blank"
+                rel="noopener noreferrer"
+                style={{fontSize: "23px",marginTop:"6px"}}
+              >
+                <i className="fab fa-linkedin-in"></i>
+              </a>
               <a
                 href="https://www.facebook.com/thesachinbansal/"
                 aria-label="Visit our Facebook"
@@ -80,11 +89,11 @@ const Footer = () => {
           <div className="footer-column contact">
             <h3>Contact Me</h3>
             <p>
-              <strong>For Admission/Career Related Guidance</strong>
+              <strong>For Admission/Career Related Guidance</strong>
               <br />
               <a href="mailto:2sachinbansal@gmail.com">2sachinbansal@gmail.com</a>
               <br />
-              
+              <a href="tel:9013049971" style={{ textDecoration: 'none', color: 'inherit' }}>9013049971</a>
             </p>
           </div>
         </div>
