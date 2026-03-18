@@ -44,7 +44,7 @@ const Footer = () => {
                 aria-label="Visit our LinkedIn"
                 target="_blank"
                 rel="noopener noreferrer"
-                style={{fontSize: "23px",marginTop:"6px"}}
+                style={{fontSize: "23px",marginTop:"7px"}}
               >
                 <i className="fab fa-linkedin-in"></i>
               </a>
