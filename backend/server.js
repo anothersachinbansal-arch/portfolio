@@ -140,6 +140,44 @@ app.post("/send-mail-result", async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+app.post("/send-otp-mail", async (req, res) => {
+  const { email } = req.body;
+
+  try {
+    // 1. Random 6 digit OTP generate
+    const otp = Math.floor(100000 + Math.random() * 900000);
+
+    // 2. Email HTML
+    const emailContent = `
+      <h2>OTP Verification</h2>
+      <p>Your OTP is:</p>
+      <h1 style="color:blue;">${otp}</h1>
+      <p>This OTP will expire in 5 minutes.</p>
+    `;
+
+    // 3. Send email
+    await resend.emails.send({
+      from: "OTP Service <onboarding@resend.dev>",
+      to: email,
+      subject: "Your OTP Code",
+      html: emailContent,
+    });
+
+    // 4. Response (testing ke liye OTP bhej rahe hain)
+    res.json({
+      success: true,
+      message: "OTP sent successfully",
+      otp: otp   // ⚠️ production me mat bhejna
+    });
+
+  } catch (error) {
+    console.error("OTP Email Error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
 
 
 // Add this route before the error handling middleware
