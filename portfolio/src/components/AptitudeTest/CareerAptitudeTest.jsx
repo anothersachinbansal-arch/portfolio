@@ -88,17 +88,17 @@ const CareerAptitudeTest = () => {
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({
     name: '',
-    phone: '',
+    mobile: '',
     className: ''
   });
-  const [mobile, setMobile] = useState('');
-  const [otp, setOtp] = useState('');
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
-  const [otpError, setOtpError] = useState('');
-  const [confirmationResult, setConfirmationResult] = useState(null);
-  const [cooldown, setCooldown] = useState(0);
-  const [isSendingOtp, setIsSendingOtp] = useState(false);
+  // const [mobile, setMobile] = useState('');
+  // const [otp, setOtp] = useState('');
+  // const [otpSent, setOtpSent] = useState(false);
+  // const [otpVerified, setOtpVerified] = useState(false);
+  // const [otpError, setOtpError] = useState('');
+  // const [confirmationResult, setConfirmationResult] = useState(null);
+  // const [cooldown, setCooldown] = useState(0);
+  // const [isSendingOtp, setIsSendingOtp] = useState(false);
   const [testData, setTestData] = useState(null);
   const [showScratchCard, setShowScratchCard] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
@@ -260,99 +260,92 @@ const CareerAptitudeTest = () => {
     }));
   };
 
-  // ─── FIX: setupRecaptcha — invisible mode, div se attach, ek baar banana ───
-  const setupRecaptcha = () => {
-    // Pehle se exist karta hai toh dobara mat banao
-    if (window.recaptchaVerifier) return;
+  // OTP related functions commented out
+  // const setupRecaptcha = () => {
+  //   // Pehle se exist karta hai toh dobara mat banao
+  //   if (window.recaptchaVerifier) return;
 
-    // 'recaptcha-container' div se attach — yeh hamesha DOM mein hona chahiye
-    // size: 'invisible' — mobile pe visible captcha render nahi hota, yahi root cause tha
-    window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
-      size: 'invisible',
-      callback: () => {
-        // Auto-verified, kuch nahi karna
-        console.log('reCAPTCHA auto-verified');
-      },
-      'expired-callback': () => {
-        // Expire hone pe instance reset karo taaki agli baar fresh bane
-        if (window.recaptchaVerifier) {
-          window.recaptchaVerifier.clear();
-          window.recaptchaVerifier = null;
-        }
-      }
-    });
-  };
+  //   // 'recaptcha-container' div se attach — yeh hamesha DOM mein hona chahiye
+  //   // size: 'invisible' — mobile pe visible captcha render nahi hota, yahi root cause tha
+  //   window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', {
+  //     size: 'invisible',
+  //     callback: () => {
+  //       // Auto-verified, kuch nahi karna
+  //       console.log('reCAPTCHA auto-verified');
+  //     },
+  //     'expired-callback': () => {
+  //       // Expire hone pe instance reset karo taaki agli baar fresh bane
+  //       if (window.recaptchaVerifier) {
+  //         window.recaptchaVerifier.clear();
+  //         window.recaptchaVerifier = null;
+  //       }
+  //     }
+  //   });
+  // };
 
-  // ─── FIX: handleSendOtp — clean flow, error pe proper reset ───
-  const handleSendOtp = async () => {
-    if (!mobile || mobile.length !== 10) {
-      toast.error("Enter valid 10-digit mobile number");
-      return;
-    }
+  // OTP related functions commented out
+  // const handleSendOtp = async () => {
+  //   if (!mobile || mobile.length !== 10) {
+  //     toast.error("Enter valid 10-digit mobile number");
+  //     return;
+  //   }
 
-    setIsSendingOtp(true);
+  //   setIsSendingOtp(true);
 
-    try {
-      // Setup karo — already hai toh skip ho jayega
-      setupRecaptcha();
+  //   try {
+  //     // Setup karo — already hai toh skip ho jayega
+  //     setupRecaptcha();
 
-      const phoneNumber = "+91" + mobile;
-      const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
+  //     const phoneNumber = "+91" + mobile;
+  //     const confirmation = await signInWithPhoneNumber(auth, phoneNumber, window.recaptchaVerifier);
 
-      setConfirmationResult(confirmation);
-      setOtpSent(true);
-      toast.success("OTP sent successfully!");
+  //     setConfirmationResult(confirmation);
+  //     setOtpSent(true);
+  //     toast.success("OTP sent successfully!");
 
-      // Cooldown timer
-      setCooldown(60);
-      const timer = setInterval(() => {
-        setCooldown(prev => {
-          if (prev <= 1) { clearInterval(timer); return 0; }
-          return prev - 1;
-        });
-      }, 1000);
+  //     // Cooldown timer
+  //     setCooldown(60);
+  //     const timer = setInterval(() => {
+  //       setCooldown(prev => {
+  //         if (prev <= 1) { clearInterval(timer); return 0; }
+  //         return prev - 1;
+  //       });
+  //     }, 1000);
 
-   } catch (error) {
-  // Error pe instance clear karo
-  if (window.recaptchaVerifier) {
-    window.recaptchaVerifier.clear();
-    window.recaptchaVerifier = null;
-  }
+  //  } catch (error) {
+  // // Error pe instance clear karo
+  // if (window.recaptchaVerifier) {
+  //   window.recaptchaVerifier.clear();
+  //   window.recaptchaVerifier = null;
+  // }
 
-  // Exact error screen pe dikhao — debugging ke liye
-  toast.error(`Error: ${error.code} | ${error.message}`, {
-    position: "top-center",
-    autoClose: 15000, // 15 second tak dikhega padhne ke liye
-  });
-}
+  // // Exact error screen pe dikhao — debugging ke liye
+  // toast.error(`Error: ${error.code} | ${error.message}`, {
+  //   position: "top-center",
+  //   autoClose: 15000, // 15 second tak dikhega padhne ke liye
+  // });
+  // }
 
-    setIsSendingOtp(false);
-  };
+  //   setIsSendingOtp(false);
+  // };
 
-  // ─── FIX: handleResendOtp — purana instance clear karke fresh OTP bhejo ───
-  const handleResendOtp = async () => {
-    // Purana recaptcha instance zaroor clear karo
-    if (window.recaptchaVerifier) {
-      window.recaptchaVerifier.clear();
-      window.recaptchaVerifier = null;
-    }
-    // State reset
-    setOtpSent(false);
-    setOtp('');
-    setConfirmationResult(null);
-    // Fresh OTP
-    await handleSendOtp();
-  };
+  // OTP related functions commented out
+  // const handleResendOtp = async () => {
+  //   // Purana recaptcha instance zaroor clear karo
+  //   if (window.recaptchaVerifier) {
+  //     window.recaptchaVerifier.clear();
+  //     window.recaptchaVerifier = null;
+  //   }
+  //   // State reset
+  //   setOtpSent(false);
+  //   setOtp('');
 
   const handleFormSubmit = async (e) => {
     e.preventDefault();
 
-    if (!otpVerified) {
-      if (!otpSent) {
-        toast.error("Please send OTP first by entering your mobile number");
-      } else {
-        toast.error("Please verify your mobile number with the OTP sent to your device");
-      }
+    // Validate mobile number (10 digits)
+    if (!formData.mobile || formData.mobile.length !== 10) {
+      toast.error("Please enter a valid 10-digit mobile number");
       return;
     }
 
@@ -368,7 +361,7 @@ const CareerAptitudeTest = () => {
 
     const currentTestData = {
       name: formData.name,
-      phone: '+91' + mobile,
+      mobile: '+91' + formData.mobile,
       className: formData.className,
       scores: scores
     };
@@ -380,7 +373,7 @@ const CareerAptitudeTest = () => {
       `Investigative (The Analyst): ${scores.I}/4`,
       `Artistic (The Creator): ${scores.A}/4`,
       `Social (The Helper): ${scores.S}/4`,
-      `Enterprising (The Persuader): ${scores.E}/4`,
+      `Enterprising (The Persuaders): ${scores.E}/4`,
       `Conventional (The Organizer): ${scores.C}/4`
     ].join("\n");
 
@@ -393,7 +386,7 @@ const CareerAptitudeTest = () => {
         "https://portfolio-x0gj.onrender.com/send-mail-result",
         {
           name: currentTestData.name,
-          phone: currentTestData.phone,
+          phone: currentTestData.mobile,
           className: currentTestData.className,
           score: Object.values(scores).reduce((a, b) => a + b, 0),
           total: 24,
@@ -413,38 +406,40 @@ const CareerAptitudeTest = () => {
     });
   };
 
-  const handleVerifyOtp = async () => {
-    try {
-      await confirmationResult.confirm(otp);
-      setOtpVerified(true);
-      toast.success("OTP verified successfully!");
-    } catch (error) {
-      console.error("OTP Verify Error:", error.code, error.message);
+  // OTP verification function commented out
+  // const handleVerifyOtp = async () => {
+  //   try {
+  //     await confirmationResult.confirm(otp);
+  //     setOtpVerified(true);
+  //     toast.success("OTP verified successfully!");
+  //   } catch (error) {
+  //     console.error("OTP Verify Error:", error.code, error.message);
 
-      if (error.code === "auth/invalid-verification-code") {
-        toast.error("Invalid OTP. Please check and try again.");
-      } else if (error.code === "auth/code-expired") {
-        toast.error("OTP has expired. Please request a new OTP.");
-        setOtpSent(false);
-        setOtpVerified(false);
-        setOtp('');
-        setConfirmationResult(null);
-      } else if (error.code === "auth/too-many-requests") {
-        toast.error("Too many attempts. Please try again later.");
-        setOtpSent(false);
-        setOtpVerified(false);
-        setOtp('');
-        setConfirmationResult(null);
-      } else {
-        toast.error("OTP verification failed. Please try again.");
-      }
-    }
-  };
+  //     if (error.code === "auth/invalid-verification-code") {
+  //       toast.error("Invalid OTP. Please check and try again.");
+  //     } else if (error.code === "auth/code-expired") {
+  //       toast.error("OTP has expired. Please request a new OTP.");
+  //       setOtpSent(false);
+  //       setOtpVerified(false);
+  //       setOtp('');
+  //       setConfirmationResult(null);
+  //     } else if (error.code === "auth/too-many-requests") {
+  //       toast.error("Too many attempts. Please try again later.");
+  //       setOtpSent(false);
+  //       setOtpVerified(false);
+  //       setOtp('');
+  //       setConfirmationResult(null);
+  //     } else {
+  //       toast.error("OTP verification failed. Please try again.");
+  //     }
+  //   }
+  // };
 
   const revealScratchCard = () => {
     setShowScratchCard(true);
   };
 
+// ...
   const handleConsultationSubmit = async (consultationData) => {
     if (!testData) return;
 
@@ -511,92 +506,26 @@ const CareerAptitudeTest = () => {
               </div>
 
               <div className="form-group">
-                <label>Mobile Number (with WhatsApp)</label>
-                <div className="mobile-input">
-                  <span className="country-code">+91</span>
-                  <input
-                    type="tel"
-                    value={mobile}
-                    onChange={(e) => {
-                      const value = e.target.value.replace(/\D/g, '');
-                      if (value.length <= 10) {
-                        setMobile(value);
-                      }
-                    }}
-                    required
-                    placeholder="Enter 10-digit mobile number"
-                    disabled={otpVerified}
-                  />
-                </div>
-
-                {/*
-                  FIX: recaptcha-container — hamesha DOM mein rehna chahiye, conditionally render mat karo.
-                  Invisible mode hai toh user ko dikhega nahi, Firebase internally use karega.
-                */}
-                <div id="recaptcha-container"></div>
-
-                {!otpVerified && mobile.length === 10 && (
-                  <button
-                    type="button"
-                    onClick={handleSendOtp}
-                    className="otp-button"
-                    disabled={isSendingOtp || cooldown > 0}
-                    style={{ marginTop: '10px', width: '100%' }}
-                  >
-                    {isSendingOtp
-                      ? 'Sending...'
-                      : cooldown > 0
-                      ? `Resend OTP in ${cooldown}s`
-                      : 'Send OTP'}
-                  </button>
-                )}
+                <label htmlFor="mobile">Mobile Number (with WhatsApp) *</label>
+                <i className="fas fa-mobile"></i>
+                <input
+                  type="tel"
+                  id="mobile"
+                  name="mobile"
+                  value={formData.mobile}
+                  onChange={(e) => {
+                    const value = e.target.value.replace(/\D/g, '');
+                    if (value.length <= 10) {
+                      setFormData({
+                        ...formData,
+                        mobile: value
+                      });
+                    }
+                  }}
+                  required
+                  placeholder="Enter 10-digit mobile number"
+                />
               </div>
-
-              {otpSent && !otpVerified && (
-                <div className="form-group">
-                  <label>Enter OTP</label>
-                  <div className="otp-verify">
-                    <input
-                      type="text"
-                      value={otp}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, '');
-                        if (value.length <= 6) {
-                          setOtp(value);
-                        }
-                      }}
-                      placeholder="Enter 6-digit OTP"
-                      maxLength={6}
-                    />
-                    <button
-                      type="button"
-                      onClick={handleVerifyOtp}
-                      className="verify-button"
-                      disabled={otp.length !== 6}
-                    >
-                      Verify OTP
-                    </button>
-                  </div>
-                  <div className="resend-container">
-                    {/* FIX: Resend pe handleResendOtp use karo — pehle clear, phir fresh OTP */}
-                    <button
-                      type="button"
-                      onClick={handleResendOtp}
-                      className="resend-button"
-                      disabled={cooldown > 0 || isSendingOtp}
-                    >
-                      {cooldown > 0 ? `Resend OTP in ${cooldown}s` : 'Resend OTP'}
-                    </button>
-                  </div>
-                  {otpError && <div className="error-message">{otpError}</div>}
-                </div>
-              )}
-
-              {otpVerified && (
-                <div className="success-message">
-                  ✓ Mobile number verified
-                </div>
-              )}
 
               <div className="form-group">
                 <label htmlFor="className">Class/Grade</label>
@@ -629,19 +558,15 @@ const CareerAptitudeTest = () => {
               <button
                 type="submit"
                 className="submit-button"
-                disabled={!otpVerified || !formData.name.trim() || !formData.className}
+                disabled={!formData.name.trim() || !formData.mobile || formData.mobile.length !== 10 || !formData.className}
                 title={
-                  !otpVerified ? "Please verify your mobile number first"
-                  : !formData.name.trim() ? "Please enter your name"
+                  !formData.name.trim() ? "Please enter your name"
+                  : !formData.mobile || formData.mobile.length !== 10 ? "Please enter a valid 10-digit mobile number"
                   : !formData.className ? "Please select your class"
                   : "View your career test results"
                 }
               >
-                {!otpVerified ? (
-                  <span>{otpSent ? "🔒 Verify OTP to View Result" : "🔒 Send OTP First"}</span>
-                ) : (
-                  <span>🎯 View My Result</span>
-                )}
+                <span>🎯 View My Result</span>
               </button>
 
             </form>
