@@ -110,7 +110,7 @@ const PaymentSuccess = () => {
             <li>You will receive an order confirmation email shortly</li>
             <li>Our team will process your order within 24 hours</li>
             <li>You will receive tracking details once shipped</li>
-            <li>For any queries, contact: support@thesachinbansal.in</li>
+            <li>For any queries, contact: 2sachinbansal@gmail.com or call on 9013049971</li>
           </ul>
         </div>
 
