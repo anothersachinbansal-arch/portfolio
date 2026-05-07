@@ -8,7 +8,7 @@ const books = [
     cardClass: "card-ps12",
     badge: "Class 12 · Political Science",
     title: "Class 12 Political Science Guide (CBSE) – Notes, Important Questions & Exam Preparation",
-    price: 499,
+    price: 1,
     stars: 5,
     description: `A focused guide for Class XII students studying Political Science under the CBSE curriculum. Presents key concepts in a clear and structured way, making it easier to understand, revise, and apply in exams. Built on classroom experience, the book offers concise notes, important questions, and exam-oriented content to help students prepare with clarity and confidence. It also supports better answer writing and systematic revision. This book is designed to supplement your preparation and is not a substitute for NCERT textbooks.`,
     images: ["/book1.png", "/book1back.png"],
