@@ -179,7 +179,7 @@ const AdminDashboard = () => {
   // Mark Order as Delivered
   const markAsDelivered = async (paymentId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/mark-delivered/${paymentId}`, {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/mark-delivered/${paymentId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
@@ -205,7 +205,7 @@ const AdminDashboard = () => {
     }
     
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/add-note/${paymentId}`, {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/add-note/${paymentId}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -244,7 +244,7 @@ const AdminDashboard = () => {
   // Delete Note
   const deleteNote = async (paymentId, noteId) => {
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/delete-note/${paymentId}/${noteId}`, {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/delete-note/${paymentId}/${noteId}`, {
         method: 'DELETE'
       });
       

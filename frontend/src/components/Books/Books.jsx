@@ -257,7 +257,7 @@ const Books = () => {
     setLoading(selectedBook.id);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/create-order`, {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ bookId: selectedBook.id, title: selectedBook.title, amount: selectedBook.price, ...cleanFormData }),
@@ -278,7 +278,7 @@ const Books = () => {
         handler: async function (response) {
           paymentCompleted = true;
           try {
-            const verifyResponse = await fetch(`${import.meta.env.VITE_API_URL}/verify-payment`, {
+            const verifyResponse = await fetch(`https://portfolio-x0gj.onrender.com/verify-payment`, {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({
@@ -311,7 +311,7 @@ const Books = () => {
           ondismiss: async function () {
             if (!paymentCompleted) {
               try {
-                await fetch(`${import.meta.env.VITE_API_URL}/payment-failed`, {
+                await fetch(`https://portfolio-x0gj.onrender.com/payment-failed`, {
                   method: "POST",
                   headers: { "Content-Type": "application/json" },
                   body: JSON.stringify({ razorpay_order_id: orderData.order_id, payment_record_id: orderData.payment_id, error_description: "Payment cancelled by user" }),
@@ -329,7 +329,7 @@ const Books = () => {
       const rzp = new window.Razorpay(options);
       rzp.on("payment.failed", async function (response) {
         try {
-          await fetch(`${import.meta.env.VITE_API_URL}/payment-failed`, {
+          await fetch(`https://portfolio-x0gj.onrender.com/payment-failed`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
