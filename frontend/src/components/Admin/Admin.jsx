@@ -161,7 +161,7 @@ const AdminDashboard = () => {
     setLoadingOrders(true);
     setOrderError('');
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/admin/purchased-books`);
+      const response = await fetch(`${import.meta.env.REACT_APP_API_URL}/api/admin/purchased-books`);
       const data = await response.json();
       if (data.success) {
         setOrders(data.payments || []);
