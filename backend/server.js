@@ -10,17 +10,19 @@ import achieverRoutes from "./routes/achieverRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
 import { Resend } from "resend";
 
 // Load env
 dotenv.config();
 
 // Initialize Resend
-const resend = new Resend(process.env.RESEND_API);
+export const resend = new Resend(process.env.RESEND_API);
 
 // Load Models
 import "./models/Question.js";
 import "./models/YouTubeVideo.js";
+import "./models/Payment.js";
 
 const app = express();
 
@@ -56,6 +58,7 @@ app.use("/api/achievers", achieverRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/youtube-videos", youtubeRoutes);
+app.use("/api", paymentRoutes);
 
 // ===============================
 // Send Mail Route (Resend)

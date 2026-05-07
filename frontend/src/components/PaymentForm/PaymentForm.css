@@ -1,0 +1,268 @@
+.payment-form-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.payment-form-container {
+  background: white;
+  border-radius: 16px;
+  max-width: 500px;
+  width: 100%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    transform: translateY(50px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.payment-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 24px 24px 0;
+  margin-bottom: 20px;
+}
+
+.payment-form-header h2 {
+  color: #333;
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin: 0;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 2rem;
+  color: #666;
+  cursor: pointer;
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s ease;
+}
+
+.close-btn:hover {
+  background: #f5f5f5;
+  color: #333;
+}
+
+.book-summary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  margin: 0 24px 24px;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+}
+
+.book-info h3 {
+  margin: 0 0 8px 0;
+  font-size: 1.1rem;
+  font-weight: 500;
+}
+
+.book-price {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+
+.payment-form {
+  padding: 0 24px 24px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #333;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e1e5e9;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.form-group input.error,
+.form-group textarea.error {
+  border-color: #e74c3c;
+}
+
+.form-group textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+.error-message {
+  display: block;
+  color: #e74c3c;
+  font-size: 0.85rem;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.cancel-btn,
+.proceed-btn {
+  flex: 1;
+  padding: 14px 20px;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background: #f8f9fa;
+  color: #666;
+  border: 2px solid #e9ecef;
+}
+
+.cancel-btn:hover:not(:disabled) {
+  background: #e9ecef;
+  color: #333;
+}
+
+.proceed-btn {
+  background: linear-gradient(135deg, #4a90e2, #357abd);
+  color: white;
+}
+
+.proceed-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #357abd, #2968a3);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.cancel-btn:disabled,
+.proceed-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.security-note {
+  background: #f8f9fa;
+  padding: 16px 24px;
+  margin: 0;
+  text-align: center;
+  border-top: 1px solid #e9ecef;
+}
+
+.security-note p {
+  margin: 0;
+  color: #666;
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.security-note i {
+  color: #4a90e2;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .payment-form-overlay {
+    padding: 15px;
+  }
+  
+  .payment-form-container {
+    max-height: 95vh;
+  }
+  
+  .payment-form-header {
+    padding: 20px 20px 0;
+  }
+  
+  .payment-form-header h2 {
+    font-size: 1.3rem;
+  }
+  
+  .book-summary {
+    margin: 0 20px 20px;
+    padding: 16px;
+  }
+  
+  .payment-form {
+    padding: 0 20px 20px;
+  }
+  
+  .form-group input,
+  .form-group textarea {
+    padding: 10px 14px;
+  }
+  
+  .form-actions {
+    flex-direction: column;
+  }
+  
+  .cancel-btn,
+  .proceed-btn {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .payment-form-header h2 {
+    font-size: 1.2rem;
+  }
+  
+  .book-info h3 {
+    font-size: 1rem;
+  }
+  
+  .book-price {
+    font-size: 1.3rem;
+  }
+}
