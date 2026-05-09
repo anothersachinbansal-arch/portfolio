@@ -83,6 +83,16 @@ const paymentSchema = new mongoose.Schema({
     type: Date,
   },
   
+  // Email Status Flags
+  orderedEmail: {
+    type: Boolean,
+    default: false,
+  },
+  deliveredEmail: {
+    type: Boolean,
+    default: false,
+  },
+  
   // Admin Notes
   adminNotes: [{
     text: {
