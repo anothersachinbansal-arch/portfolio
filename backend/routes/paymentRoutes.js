@@ -854,4 +854,251 @@ router.delete("/admin/delete-note/:paymentId/:noteId", async (req, res) => {
   }
 });
 
+// ===============================
+// Razorpay Webhook Payment Success Handler
+// ===============================
+router.post("/payment-success", async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      payment_record_id
+    } = req.body;
+
+    // Validate input
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required payment verification fields"
+      });
+    }
+
+    // Generate signature for verification
+    const generated_signature = crypto
+      .createHmac("sha256", process.env.RAZORPAY_KEY_SECRET)
+      .update(razorpay_order_id + "|" + razorpay_payment_id)
+      .digest("hex");
+
+    // Find the payment record
+    const paymentRecord = await Payment.findById(payment_record_id);
+    if (!paymentRecord) {
+      return res.status(404).json({
+        success: false,
+        message: "Payment record not found"
+      });
+    }
+
+    // Verify signature
+    if (generated_signature !== razorpay_signature) {
+      // Update payment record as failed
+      paymentRecord.razorpay_payment_id = razorpay_payment_id;
+      paymentRecord.razorpay_signature = razorpay_signature;
+      paymentRecord.status = "failed";
+      paymentRecord.notes = {
+        ...paymentRecord.notes,
+        error_description: "Webhook signature verification failed",
+        error_reason: "Invalid signature"
+      };
+      await paymentRecord.save();
+
+      return res.status(400).json({
+        success: false,
+        message: "Payment verification failed - signature mismatch",
+        transaction_id: paymentRecord._id
+      });
+    }
+
+    // Check if payment is already processed
+    if (paymentRecord.status === "success") {
+      return res.json({
+        success: true,
+        message: "Payment already processed",
+        transaction_id: paymentRecord._id
+      });
+    }
+
+    // Update payment record as successful
+    paymentRecord.razorpay_payment_id = razorpay_payment_id;
+    paymentRecord.razorpay_signature = razorpay_signature;
+    paymentRecord.status = "success";
+    await paymentRecord.save();
+
+    console.log("Payment success webhook processed:", {
+      order_id: razorpay_order_id,
+      payment_id: razorpay_payment_id,
+      transaction_id: paymentRecord._id,
+      email: paymentRecord.email,
+      bookTitle: paymentRecord.bookTitle
+    });
+
+    // Send comprehensive emails with book details
+    try {
+      await sendPaymentSuccessEmails(paymentRecord, req);
+    } catch (emailError) {
+      console.error("Failed to send payment success emails:", emailError);
+      // Don't fail the response if emails fail
+    }
+
+    res.json({
+      success: true,
+      message: "Payment processed successfully",
+      transaction_id: paymentRecord._id,
+      order_id: razorpay_order_id,
+      payment_id: razorpay_payment_id,
+      book_details: {
+        title: paymentRecord.bookTitle,
+        amount: paymentRecord.amount,
+        customer_name: paymentRecord.name,
+        customer_email: paymentRecord.email
+      }
+    });
+
+  } catch (error) {
+    console.error("Error processing payment success webhook:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to process payment success",
+      error: error.message
+    });
+  }
+});
+
+// ===============================
+// Helper Function: Send Payment Success Emails
+// ===============================
+async function sendPaymentSuccessEmails(paymentRecord, req) {
+  const { _id, name, email, mobile, address, pincode, bookTitle, amount, razorpay_order_id, razorpay_payment_id } = paymentRecord;
+
+  // Send email to admin with full book details
+  const adminEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 700px; margin: 0 auto;">
+      <h2 style="color: #28a745;">🎉 New Book Order - Payment Successful!</h2>
+      
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>📚 Book Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Book Title:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${bookTitle}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Price:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">₹${amount}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Book ID:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${paymentRecord.bookId}</td></tr>
+        </table>
+      </div>
+      
+      <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>👤 Customer Information</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Name:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${name}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Email:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${email}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Mobile:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${mobile}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Address:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${address}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Pincode:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${pincode}</td></tr>
+        </table>
+      </div>
+      
+      <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>💳 Payment Information</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Transaction ID:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${_id}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Order ID:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${razorpay_order_id}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Payment ID:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${razorpay_payment_id}</td></tr>
+          <tr><td style="padding: 8px; border: 1px solid #ddd;"><strong>Payment Date:</strong></td><td style="padding: 8px; border: 1px solid #ddd;">${new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
+        </table>
+      </div>
+      
+      <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <h4>📦 Next Steps</h4>
+        <p>Please process this order for delivery. You can mark it as delivered from the admin panel once the book reaches the customer.</p>
+      </div>
+      
+      <hr style="margin: 30px 0;">
+      <p style="color: #6c757d; font-size: 14px;">
+        This is an automated notification from Sachin Bansal's Book Store.<br>
+        Timestamp: ${new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' })}
+      </p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Book Store Orders <onboarding@resend.dev>",
+    to: "anotherdimplekataria@gmail.com",
+    subject: `🎉 New Order - ${bookTitle} - ${name}`,
+    html: adminEmailContent,
+  });
+
+  // Send detailed email to customer
+  const customerEmailContent = `
+    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+      <h2 style="color: #28a745;">🎉 Order Confirmed!</h2>
+      
+      <p>Dear <strong>${name}</strong>,</p>
+      
+      <p>Thank you for your purchase! Your payment has been successfully processed and your order has been confirmed. We're excited to help you on your learning journey!</p>
+      
+      <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h3>📚 Your Order Details</h3>
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 8px;"><strong>Book Title:</strong></td><td style="padding: 8px;">${bookTitle}</td></tr>
+          <tr><td style="padding: 8px;"><strong>Amount Paid:</strong></td><td style="padding: 8px;">₹${amount}</td></tr>
+          <tr><td style="padding: 8px;"><strong>Transaction ID:</strong></td><td style="padding: 8px;">${_id}</td></tr>
+          <tr><td style="padding: 8px;"><strong>Order ID:</strong></td><td style="padding: 8px;">${razorpay_order_id}</td></tr>
+          <tr><td style="padding: 8px;"><strong>Payment ID:</strong></td><td style="padding: 8px;">${razorpay_payment_id}</td></tr>
+        </table>
+      </div>
+      
+      <div style="background: #d4edda; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h4>📦 Delivery Information</h4>
+        <p>Your book will be delivered to:</p>
+        <div style="background: white; padding: 15px; border-radius: 5px; margin: 10px 0;">
+          <p><strong>${name}</strong><br>
+          ${address}<br>
+          ${pincode}<br>
+          📱 ${mobile}</p>
+        </div>
+        <p><em>Expected delivery: 3-7 business days</em></p>
+      </div>
+      
+      <div style="background: #e7f3ff; padding: 20px; border-radius: 8px; margin: 20px 0;">
+        <h4>📚 About Your Book</h4>
+        <p><strong>${bookTitle}</strong> is a comprehensive study guide designed to help you excel in your exams. This book includes:</p>
+        <ul>
+          <li>✅ Clear and concise explanations</li>
+          <li>✅ Important questions and answers</li>
+          <li>✅ Exam-oriented content</li>
+          <li>✅ Practice exercises and examples</li>
+          <li>✅ Previous year solved papers</li>
+        </ul>
+      </div>
+      
+      <div style="background: #fff3cd; padding: 15px; border-radius: 8px; margin: 20px 0;">
+        <h4>📧 What's Next?</h4>
+        <p>You will receive:</p>
+        <ol>
+          <li>Order confirmation (this email)</li>
+          <li>Shipping confirmation with tracking details</li>
+          <li>Delivery confirmation email</li>
+        </ol>
+      </div>
+      
+      <p>For any queries or support, please feel free to contact us. We're here to help!</p>
+      
+      <hr style="margin: 30px 0;">
+      <p style="color: #6c757d; font-size: 14px;">
+        Best regards,<br>
+        <strong>Sachin Bansal</strong><br>
+        Author & Educator<br>
+        <small>This is an automated email. Please do not reply to this email.</small>
+      </p>
+    </div>
+  `;
+
+  await resend.emails.send({
+    from: "Sachin Bansal's Book Store <onboarding@resend.dev>",
+    to: email,
+    subject: `🎉 Order Confirmed - ${bookTitle} | Sachin Bansal's Book Store`,
+    html: customerEmailContent,
+  });
+
+  console.log(`Payment success emails sent for transaction: ${_id} (Admin: Yes, Customer: Yes)`);
+}
+
 export default router;
