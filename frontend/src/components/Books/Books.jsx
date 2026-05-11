@@ -2,56 +2,60 @@ import React, { useState, useEffect, useRef } from "react";
 import PaymentForm from "../PaymentForm/PaymentForm";
 import "./Books.css";
 
-const books = [
-  {
-    id: "BK101",
-    cardClass: "card-ps12",
-    badge: "Class 12 · Political Science",
-    title: "Class 12 Political Science Guide (CBSE) – Notes, Important Questions & Exam Preparation",
-    price: 1,
-    stars: 5,
-    description: `A focused guide for Class XII students studying Political Science under the CBSE curriculum. Presents key concepts in a clear and structured way, making it easier to understand, revise, and apply in exams. Built on classroom experience, the book offers concise notes, important questions, and exam-oriented content to help students prepare with clarity and confidence. It also supports better answer writing and systematic revision. This book is designed to supplement your preparation and is not a substitute for NCERT textbooks.`,
-    images: ["/book1.png", "/book1back.png"],
-    fallbackEmojis: ["📘", "📖"],
-    fallbackClasses: ["cover-ps12-a", "cover-ps12-b"],
-  },
-  {
-    id: "BK102",
-    cardClass: "card-ps11",
-    badge: "Class 11 · Political Science",
-    title: "Class 11 Political Science Guide (CBSE) – Notes, Important Questions & Exam Preparation",
-    price: 499,
-    stars: 5,
-    description: `A focused guide for Class XI students studying Political Science under the CBSE curriculum. Presents key concepts in a clear and structured way, making it easier to understand, revise, and apply in exams. Built on classroom experience with concise notes, important questions, and exam-oriented content to help students prepare with clarity and confidence. It also supports better answer writing and systematic revision. This book is designed to supplement your preparation and is not a substitute for NCERT textbooks.`,
-    images: ["/book2.png", "/book2back.png"],
-    fallbackEmojis: ["📗", "📚"],
-    fallbackClasses: ["cover-ps11-a", "cover-ps11-b"],
-  },
-  {
-    id: "BK103",
-    cardClass: "card-soc12",
-    badge: "Class 12 · Sociology",
-    title: "CBSE Class 12 Sociology – Complete Guide with Notes and Important Questions",
-    price: 499,
-    stars: 5,
-    description: `A practical and student-friendly guide for Class XII Sociology based on the CBSE curriculum. Designed to help students understand key sociological concepts with clarity while preparing effectively for board examinations. Offers well-structured notes, clear explanations, and carefully selected important questions to support systematic learning and revision. Focuses on building conceptual understanding along with improving answer-writing skills, which are essential for scoring well in exams.`,
-    images: ["/book3.png", "/book3back.png"],
-    fallbackEmojis: ["📙", "🔬"],
-    fallbackClasses: ["cover-soc12-a", "cover-soc12-b"],
-  },
-  {
-    id: "BK104",
-    cardClass: "card-soc11",
-    badge: "Class 11 · Sociology",
-    title: "CBSE Class 11 Sociology – Complete Guide with Notes and Important Questions",
-    price: 499,
-    stars: 5,
-    description: `A practical and student-friendly guide for Class XI Sociology based on the CBSE curriculum. Designed to help students understand key sociological concepts with clarity while preparing effectively for board examinations. Offers well-structured notes, clear explanations, and carefully selected important questions to support systematic learning and revision. Focuses on building conceptual understanding along with improving answer-writing skills, which are essential for scoring well in exams.`,
-    images: ["/book4.png", "/book4back.png"],
-    fallbackEmojis: ["📓", "🧩"],
-    fallbackClasses: ["cover-soc11-a", "cover-soc11-b"],
-  },
-];
+/* ── Main Component ── */
+const Books = () => {
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [selectedBook, setSelectedBook] = useState(null);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [lightbox, setLightbox] = useState({ book: null, slideIndex: 0 });
+  const [expandedDesc, setExpandedDesc] = useState({});
+  const [bookmarks, setBookmarks] = useState({});
+  const [paymentLoading, setPaymentLoading] = useState(null);
+
+  // Fetch available books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/available');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to match component structure
+          const transformedBooks = data.books.map((book, index) => ({
+            id: book.bookId,
+            cardClass: `card-${book.category.toLowerCase().replace(/\s+/g, '-')}`,
+            badge: `${book.classLevel} · ${book.category}`,
+            title: book.title,
+            price: book.price,
+            stars: 5,
+            description: book.description,
+            images: [book.imageUrl, book.imageUrl], // Use same image for front/back
+            fallbackEmojis: ["�", "�"],
+            fallbackClasses: ["cover-default-a", "cover-default-b"],
+            bookId: book.bookId,
+            author: book.author,
+            category: book.category,
+            classLevel: book.classLevel,
+            pages: book.pages,
+            language: book.language
+          }));
+          setBooks(transformedBooks);
+        } else {
+          setError('Failed to load books');
+        }
+      } catch (err) {
+        console.error('Error fetching books:', err);
+        setError('Error loading books');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
 
 /* ── Image Carousel ── */
 const ImageCarousel = ({ book, onImageClick }) => {
@@ -238,7 +242,7 @@ const Books = () => {
 
   const handleFormSubmit = async (formData) => {
     if (!selectedBook) return;
-    if (loading === selectedBook.id) return;
+    if (paymentLoading === selectedBook.id) return;
 
     let paymentCompleted = false;
     const cleanFormData = {
@@ -254,13 +258,13 @@ const Books = () => {
     if (!cleanFormData.mobile || !/^[0-9]{10}$/.test(cleanFormData.mobile)) { alert("Please enter a valid 10-digit mobile number"); return; }
 
     await new Promise((resolve) => setTimeout(resolve, 1000));
-    setLoading(selectedBook.id);
+    setPaymentLoading(selectedBook.id);
 
     try {
       const response = await fetch(`https://portfolio-x0gj.onrender.com/api/create-order`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ bookId: selectedBook.id, title: selectedBook.title, amount: selectedBook.price, ...cleanFormData }),
+        body: JSON.stringify({ bookId: selectedBook.bookId, title: selectedBook.title, amount: selectedBook.price, ...cleanFormData }),
       });
       const orderData = await response.json();
       if (!orderData.success) throw new Error(orderData.message || "Failed to create order");
@@ -304,7 +308,7 @@ const Books = () => {
           } catch (error) {
             alert("Payment verification failed. Please contact support.");
           } finally {
-            setLoading(null);
+            setPaymentLoading(null);
           }
         },
         modal: {
@@ -318,7 +322,7 @@ const Books = () => {
                 });
               } catch (e) { console.error(e); }
             }
-            setLoading(null);
+            setPaymentLoading(null);
           },
           escape: true, animation: true, backdropclose: false, handleback: false,
         },
@@ -341,13 +345,13 @@ const Books = () => {
             }),
           });
         } catch (e) { console.error(e); }
-        setLoading(null);
+        setPaymentLoading(null);
         if (confirm(response.error.description + "\n\nWould you like to try again?")) setShowPaymentForm(true);
       });
       rzp.open();
     } catch (error) {
       alert("Failed to initiate payment. Please try again.");
-      setLoading(null);
+      setPaymentLoading(null);
     }
   };
 
@@ -357,58 +361,89 @@ const Books = () => {
         <h1 className="section-label">📚 My Books</h1>
         <p className="section-sub">Authored for CBSE students — Political Science & Sociology</p>
 
-        <div className="cards-grid">
-          {books.map((book, bi) => (
-            <div key={book.id} data-book-id={book.id} className={`book-card ${book.cardClass} ${expandedDesc[bi] ? 'expanded' : ''}`}>
+        {/* Loading State */}
+        {loading && (
+          <div className="loading-state">
+            <div className="loading-spinner">Loading books...</div>
+          </div>
+        )}
 
-              {/* Image Carousel */}
-              <ImageCarousel
-                book={book}
-                onImageClick={(si) => setLightbox({ book, slideIndex: si })}
-              />
+        {/* Error State */}
+        {error && (
+          <div className="error-state">
+            <div className="error-message">{error}</div>
+            <button onClick={() => window.location.reload()} className="retry-btn">
+              Retry
+            </button>
+          </div>
+        )}
 
-              {/* Content */}
-              <div className="card-content">
-                <span className="badge">{book.badge}</span>
-                <h3 className="book-title">{book.title}</h3>
-                <p className="book-author">By Sachin Bansal</p>
-                <div className="stars">{"★".repeat(book.stars)}{"☆".repeat(5 - book.stars)}</div>
-
-                <p className={`book-desc ${expandedDesc[bi] ? "expanded" : ""}`}>
-                  {book.description}
-                </p>
-                <button
-                  className="view-more"
-                  onClick={() => setExpandedDesc((prev) => ({ ...prev, [bi]: !prev[bi] }))}
-                >
-                  {expandedDesc[bi] ? "View less" : "View more"}
-                </button>
-
-                <div className="card-footer">
-                  <div className="price-block">
-                    <span className="price-label">Price</span>
-                    <span className="price-value">₹{book.price}</span>
-                  </div>
-                  <button
-                    className="buy-btn"
-                    onClick={() => handleBuyNow(book)}
-                    disabled={loading !== null}
-                  >
-                    {loading === book.id ? "Processing..." : loading !== null ? "Please wait..." : "Buy Now"}
-                  </button>
+        {/* Books Grid */}
+        {!loading && !error && (
+          <>
+            {books.length === 0 ? (
+              <div className="no-books-state">
+                <div className="no-books-message">
+                  <h3>No books available</h3>
+                  <p>Currently, there are no books available for purchase. Please check back later.</p>
                 </div>
               </div>
+            ) : (
+              <div className="cards-grid">
+                {books.map((book, bi) => (
+                  <div key={book.id} data-book-id={book.id} className={`book-card ${book.cardClass} ${expandedDesc[bi] ? 'expanded' : ''}`}>
 
-              {/* Bookmark */}
-              <button
-                className={`bookmark-btn ${bookmarks[bi] ? "saved" : ""}`}
-                onClick={() => setBookmarks((prev) => ({ ...prev, [bi]: !prev[bi] }))}
-              >
-                🔖
-              </button>
-            </div>
-          ))}
-        </div>
+                    {/* Image Carousel */}
+                    <ImageCarousel
+                      book={book}
+                      onImageClick={(si) => setLightbox({ book, slideIndex: si })}
+                    />
+
+                    {/* Content */}
+                    <div className="card-content">
+                      <span className="badge">{book.badge}</span>
+                      <h3 className="book-title">{book.title}</h3>
+                      <p className="book-author">By {book.author}</p>
+                      <div className="stars">{"★".repeat(book.stars)}{"☆".repeat(5 - book.stars)}</div>
+
+                      <p className={`book-desc ${expandedDesc[bi] ? "expanded" : ""}`}>
+                        {book.description}
+                      </p>
+                      <button
+                        className="view-more"
+                        onClick={() => setExpandedDesc((prev) => ({ ...prev, [bi]: !prev[bi] }))}
+                      >
+                        {expandedDesc[bi] ? "View less" : "View more"}
+                      </button>
+
+                      <div className="card-footer">
+                        <div className="price-block">
+                          <span className="price-label">Price</span>
+                          <span className="price-value">₹{book.price}</span>
+                        </div>
+                        <button
+                          className="buy-btn"
+                          onClick={() => handleBuyNow(book)}
+                          disabled={paymentLoading !== null}
+                        >
+                          {paymentLoading === book.id ? "Processing..." : paymentLoading !== null ? "Please wait..." : "Buy Now"}
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Bookmark */}
+                    <button
+                      className={`bookmark-btn ${bookmarks[bi] ? "saved" : ""}`}
+                      onClick={() => setBookmarks((prev) => ({ ...prev, [bi]: !prev[bi] }))}
+                    >
+                      🔖
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </>
+        )}
       </div>
 
       {/* Lightbox */}

@@ -28,6 +28,72 @@
   letter-spacing: 0.5px;
 }
 
+/* ── Loading & Error States ── */
+.loading-state,
+.error-state,
+.no-books-state {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 300px;
+  text-align: center;
+}
+
+.loading-spinner {
+  font-size: 1.2rem;
+  color: #667eea;
+  font-weight: 600;
+  padding: 2rem;
+  background: rgba(102, 126, 234, 0.1);
+  border-radius: 12px;
+  border: 2px dashed #667eea;
+}
+
+.error-message {
+  color: #e74c3c;
+  font-size: 1.1rem;
+  margin-bottom: 1rem;
+  padding: 1rem;
+  background: rgba(231, 76, 60, 0.1);
+  border-radius: 8px;
+  border: 1px solid #e74c3c;
+}
+
+.retry-btn {
+  background: #667eea;
+  color: white;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.3s ease;
+}
+
+.retry-btn:hover {
+  background: #5a6fd8;
+}
+
+.no-books-message {
+  padding: 3rem 2rem;
+  background: rgba(52, 73, 94, 0.05);
+  border-radius: 16px;
+  border: 2px dashed #95a5a6;
+}
+
+.no-books-message h3 {
+  color: #34495e;
+  font-size: 1.5rem;
+  margin-bottom: 1rem;
+  font-family: 'Lora', serif;
+}
+
+.no-books-message p {
+  color: #7f8c8d;
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
 /* ── Grid ── */
 .cards-grid {
   display: grid;
