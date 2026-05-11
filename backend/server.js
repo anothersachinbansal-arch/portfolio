@@ -28,6 +28,7 @@ import "./models/YouTubeVideo.js";
 import "./models/Payment.js";
 import "./models/Book.js";
 
+console.log("🚀 Server starting with Book Management System v2.0");
 const app = express();
 
 // ===============================
