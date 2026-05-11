@@ -388,4 +388,35 @@ router.post("/internal/decrease-quantity/:bookId", async (req, res) => {
   }
 });
 
+// ===============================
+// Debug: Get Raw Books (For Testing)
+// ===============================
+router.get("/debug", async (req, res) => {
+  try {
+    console.log("🔍 Debug: Fetching all books...");
+    const allBooks = await Book.find({});
+    console.log(`📚 Debug: Found ${allBooks.length} total books`);
+    
+    const availableBooks = await Book.find({ 
+      isAvailable: true,
+      quantity: { $gt: 0 }
+    });
+    console.log(`📚 Debug: Found ${availableBooks.length} available books`);
+    
+    res.json({
+      success: true,
+      totalBooks: allBooks.length,
+      availableBooks: availableBooks.length,
+      allBooks: allBooks,
+      availableBooksData: availableBooks
+    });
+  } catch (error) {
+    console.error("Debug error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 export default router;
