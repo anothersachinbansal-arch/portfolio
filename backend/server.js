@@ -7,6 +7,7 @@ import cors from "cors";
 import cron from "node-cron";
 import connectDB from "./config/db.js";
 import adminRoutes from "./routes/adminRoutes.js";
+import adminAuthRoutes from "./routes/adminAuthRoutes.js";
 import achieverRoutes from "./routes/achieverRoutes.js";
 import reviewRoutes from "./routes/reviewRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
@@ -59,6 +60,7 @@ connectDB();
 // Routes
 // ===============================
 app.use("/api/admin", adminRoutes);
+app.use("/api/auth/admin", adminAuthRoutes);
 app.use("/api/achievers", achieverRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/questions", questionRoutes);
