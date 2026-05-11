@@ -51,22 +51,27 @@ router.get("/available", async (req, res) => {
       quantity: { $gt: 0 }
     }).sort({ createdAt: -1 });
     console.log(`📚 Found ${books.length} available books`);
+    console.log("📖 Books data:", JSON.stringify(books, null, 2));
+    
+    const mappedBooks = books.map(book => ({
+      id: book._id,
+      bookId: book.bookId,
+      title: book.title,
+      description: book.description,
+      price: book.price,
+      imageUrl: book.imageUrl,
+      category: book.category,
+      classLevel: book.classLevel,
+      author: book.author,
+      pages: book.pages,
+      language: book.language
+    }));
+    
+    console.log("🔄 Mapped books:", JSON.stringify(mappedBooks, null, 2));
     
     res.json({
       success: true,
-      books: books.map(book => ({
-        id: book._id,
-        bookId: book.bookId,
-        title: book.title,
-        description: book.description,
-        price: book.price,
-        imageUrl: book.imageUrl,
-        category: book.category,
-        classLevel: book.classLevel,
-        author: book.author,
-        pages: book.pages,
-        language: book.language
-      }))
+      books: mappedBooks
     });
   } catch (error) {
     console.error("Error fetching available books:", error);
