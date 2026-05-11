@@ -51,27 +51,11 @@ router.get("/available", async (req, res) => {
       quantity: { $gt: 0 }
     }).sort({ createdAt: -1 });
     console.log(`📚 Found ${books.length} available books`);
-    console.log("📖 Books data:", JSON.stringify(books, null, 2));
     
-    const mappedBooks = books.map(book => ({
-      id: book._id,
-      bookId: book.bookId,
-      title: book.title,
-      description: book.description,
-      price: book.price,
-      imageUrl: book.imageUrl,
-      category: book.category,
-      classLevel: book.classLevel,
-      author: book.author,
-      pages: book.pages,
-      language: book.language
-    }));
-    
-    console.log("🔄 Mapped books:", JSON.stringify(mappedBooks, null, 2));
-    
+    // Return raw books data for now
     res.json({
       success: true,
-      books: mappedBooks
+      books: books
     });
   } catch (error) {
     console.error("Error fetching available books:", error);
@@ -412,6 +396,64 @@ router.get("/debug", async (req, res) => {
     });
   } catch (error) {
     console.error("Debug error:", error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ===============================
+// Production Diagnostic
+// ===============================
+router.get("/prod-diag", async (req, res) => {
+  try {
+    const diagnostics = {
+      timestamp: new Date().toISOString(),
+      env: {
+        MONGO_URI: process.env.MONGO_URI ? "SET" : "NOT_SET",
+        NODE_ENV: process.env.NODE_ENV || "undefined"
+      },
+      database: {
+        connected: mongoose.connection.readyState === 1,
+        readyState: mongoose.connection.readyState
+      },
+      bookModel: {
+        exists: Book ? true : false,
+        modelName: Book.modelName
+      }
+    };
+
+    // Test database query
+    try {
+      const totalBooks = await Book.countDocuments();
+      const availableBooks = await Book.countDocuments({ 
+        isAvailable: true,
+        quantity: { $gt: 0 }
+      });
+      
+      diagnostics.database.totalBooks = totalBooks;
+      diagnostics.database.availableBooks = availableBooks;
+      
+      // Get sample book
+      const sampleBook = await Book.findOne();
+      diagnostics.database.sampleBook = sampleBook ? {
+        id: sampleBook._id,
+        bookId: sampleBook.bookId,
+        title: sampleBook.title,
+        isAvailable: sampleBook.isAvailable,
+        quantity: sampleBook.quantity
+      } : null;
+      
+    } catch (dbError) {
+      diagnostics.database.error = dbError.message;
+    }
+
+    res.json({
+      success: true,
+      diagnostics
+    });
+  } catch (error) {
     res.status(500).json({
       success: false,
       error: error.message
