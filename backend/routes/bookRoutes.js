@@ -32,7 +32,7 @@ router.get("/admin/all", adminAuth, async (req, res) => {
         title: book.title,
         description: book.description,
         price: book.price,
-        imageUrl: book.imageUrl,
+        images: book.images || [],
         quantity: book.quantity,
         isAvailable: book.isAvailable,
         category: book.category,

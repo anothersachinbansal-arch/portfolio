@@ -1,0 +1,30 @@
+[
+  {
+    "bookId": "MATH_10_CLASS",
+    "images": [
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489377/books/MATH_10_CLASS_front.png",
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489378/books/MATH_10_CLASS_back.png"
+    ]
+  },
+  {
+    "bookId": "POLITICAL_SCIENCE_12",
+    "images": [
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489379/books/POLITICAL_SCIENCE_12_front.png",
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489381/books/POLITICAL_SCIENCE_12_back.png"
+    ]
+  },
+  {
+    "bookId": "SOCIOLOGY_12",
+    "images": [
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489383/books/SOCIOLOGY_12_front.png",
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489384/books/SOCIOLOGY_12_back.png"
+    ]
+  },
+  {
+    "bookId": "GEOGRAPHY_11",
+    "images": [
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489387/books/GEOGRAPHY_11_front.png",
+      "https://res.cloudinary.com/dtr0fix5k/image/upload/v1778489388/books/GEOGRAPHY_11_back.png"
+    ]
+  }
+]
