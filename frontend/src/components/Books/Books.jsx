@@ -202,7 +202,7 @@ const Books = () => {
             price: book.price,
             stars: 5,
             description: book.description,
-            images: [book.imageUrl, book.imageUrl], // Use same image for front/back
+            images: book.images && book.images.length > 0 ? book.images : [book.imageUrl || '', book.imageUrl || ''], // Use images array or fallback
             fallbackEmojis: ["📘", "📖"],
             fallbackClasses: ["cover-default-a", "cover-default-b"],
             bookId: book.bookId,

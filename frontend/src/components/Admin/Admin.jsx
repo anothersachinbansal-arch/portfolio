@@ -34,8 +34,8 @@ const AdminDashboard = () => {
     title: '',
     description: '',
     price: '',
-    imageUrl: '',
-    image: null,
+    images: [],
+    imageFiles: [],
     quantity: '',
     category: '',
     classLevel: '',
@@ -54,6 +54,12 @@ const AdminDashboard = () => {
   const [orderNotes, setOrderNotes] = useState({});
   const [showNoteForm, setShowNoteForm] = useState(null);
   const [newNote, setNewNote] = useState('');
+
+  // Admin Component
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loginError, setLoginError] = useState('');
+  const [loginForm, setLoginForm] = useState({ email: '', password: '' });
 
   // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question' | 'youtube' | 'add-youtube' | 'orders' | 'books' | 'add-book' | 'edit-book'
 
@@ -182,7 +188,9 @@ const AdminDashboard = () => {
     setLoadingBooks(true);
     setBookError('');
     try {
-      const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/admin/all');
+      const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/admin/all', {
+        headers: getAdminHeaders()
+      });
       const data = await response.json();
       if (data.success) {
         setBooks(data.books || []);
@@ -197,18 +205,113 @@ const AdminDashboard = () => {
     }
   };
 
+  // Check authentication on component load
   useEffect(() => {
-    fetchBooks();
+    const checkAuth = () => {
+      const token = localStorage.getItem('adminToken');
+      if (token) {
+        setIsLoggedIn(true);
+        fetchBooks(); // Only fetch books if authenticated
+      } else {
+        setIsLoggedIn(false);
+      }
+      setIsLoading(false);
+    };
+    
+    checkAuth();
   }, []);
 
 
+  // ── Helper Functions ──
+  
+  // Helper function to get admin headers with JWT token
+  const getAdminHeaders = () => {
+    const token = localStorage.getItem('adminToken');
+    return {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+  };
+
+  // Admin Login Function
+  const adminLogin = async (email, password) => {
+    try {
+      const response = await fetch('https://portfolio-x0gj.onrender.com/api/auth/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        localStorage.setItem('adminToken', data.token);
+        localStorage.setItem('adminInfo', JSON.stringify(data.admin));
+        return { success: true, data };
+      } else {
+        return { success: false, message: data.message };
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, message: 'Login failed' };
+    }
+  };
+
+  // Check if admin is logged in
+  const isAdminLoggedIn = () => {
+    return !!localStorage.getItem('adminToken');
+  };
+
+  // Admin Logout Function
+  const adminLogout = () => {
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminInfo');
+    setIsLoggedIn(false);
+    setView('dashboard');
+  };
+
+  // Handle login form input changes
+  const handleLoginChange = (e) => {
+    const { name, value } = e.target;
+    setLoginForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  // Handle login form submission
+  const handleLoginSubmit = async (e) => {
+    e.preventDefault();
+    setLoginError('');
+    
+    if (!loginForm.email || !loginForm.password) {
+      setLoginError('Please enter email and password');
+      return;
+    }
+    
+    try {
+      const result = await adminLogin(loginForm.email, loginForm.password);
+      
+      if (result.success) {
+        setIsLoggedIn(true);
+        setLoginForm({ email: '', password: '' });
+        fetchBooks(); // Fetch books after successful login
+      } else {
+        setLoginError(result.message || 'Login failed');
+      }
+    } catch (error) {
+      setLoginError('Login failed. Please try again.');
+    }
+  };
 
   // Fetch Orders from API usl
   const fetchOrders = async () => {
     setLoadingOrders(true);
     setOrderError('');
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/purchased-books`);
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/purchased-books`, {
+        headers: getAdminHeaders()
+      });
       const data = await response.json();
       if (data.success) {
         setOrders(data.payments || []);
@@ -228,7 +331,7 @@ const AdminDashboard = () => {
     try {
       const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/mark-delivered/${paymentId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
+        headers: getAdminHeaders()
       });
       const data = await response.json();
       if (data.success) {
@@ -404,8 +507,8 @@ const AdminDashboard = () => {
       title: book.title,
       description: book.description,
       price: book.price,
-      imageUrl: book.imageUrl,
-      image: null, // Reset image when editing
+      images: book.images || [],
+      imageFiles: [], // Reset image files when editing
       quantity: book.quantity,
       category: book.category,
       classLevel: book.classLevel,
@@ -428,12 +531,16 @@ const AdminDashboard = () => {
   };
 
   const handleBookImageUpload = (e) => {
-    const file = e.target.files[0];
-    if (file) {
+    const files = Array.from(e.target.files);
+    if (files.length > 0) {
+      // Limit to maximum 2 images
+      const selectedFiles = files.slice(0, 2);
+      const previews = selectedFiles.map(file => URL.createObjectURL(file));
+      
       setBookForm(prev => ({
         ...prev,
-        image: file,
-        imageUrl: '' // Clear existing URL when new image is selected
+        imageFiles: selectedFiles,
+        images: previews
       }));
     }
   };
@@ -445,19 +552,21 @@ const AdminDashboard = () => {
       
       let response;
       
-      if (bookForm.image) {
-        // Use FormData for image upload
+      if (bookForm.imageFiles && bookForm.imageFiles.length > 0) {
+        // Use FormData for multiple image uploads
         const formData = new FormData();
         
-        // Add all book fields except image and imageUrl
+        // Add all book fields except imageFiles and images
         Object.keys(bookForm).forEach(key => {
-          if (key !== 'image' && key !== 'imageUrl') {
+          if (key !== 'imageFiles' && key !== 'images') {
             formData.append(key, bookForm[key]);
           }
         });
         
-        // Add image file
-        formData.append('image', bookForm.image);
+        // Add image files
+        bookForm.imageFiles.forEach(file => {
+          formData.append('images', file);
+        });
         
         const url = isEditing 
           ? `https://portfolio-x0gj.onrender.com/api/books/admin/update/${editingBookId}`
@@ -493,8 +602,8 @@ const AdminDashboard = () => {
           title: '',
           description: '',
           price: '',
-          imageUrl: '',
-          image: null,
+          images: [],
+          imageFiles: [],
           quantity: '',
           category: '',
           classLevel: '',
@@ -1266,6 +1375,113 @@ const AdminDashboard = () => {
 
 
 
+  // Show loading spinner while checking authentication
+  if (isLoading) {
+    return (
+      <div className="admin-dashboard">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh' }}>
+          <div style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '1rem' }}>🔐</div>
+            <h2>Checking authentication...</h2>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!isLoggedIn) {
+    return (
+      <div className="admin-dashboard">
+        <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '100vh', backgroundColor: '#f5f5f5' }}>
+          <div style={{ backgroundColor: 'white', padding: '2rem', borderRadius: '8px', boxShadow: '0 4px 6px rgba(0,0,0,0.1)', width: '100%', maxWidth: '400px' }}>
+            <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
+              <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔐</div>
+              <h2>Admin Login</h2>
+              <p style={{ color: '#666' }}>Enter your credentials to access admin panel</p>
+            </div>
+            
+            <form onSubmit={handleLoginSubmit}>
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Email:</label>
+                <input
+                  type="email"
+                  name="email"
+                  value={loginForm.email}
+                  onChange={handleLoginChange}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.75rem', 
+                    border: '1px solid #ddd', 
+                    borderRadius: '4px',
+                    fontSize: '1rem'
+                  }}
+                  placeholder="admin@sachinbansal.com"
+                  required
+                />
+              </div>
+              
+              <div style={{ marginBottom: '1rem' }}>
+                <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: 'bold' }}>Password:</label>
+                <input
+                  type="password"
+                  name="password"
+                  value={loginForm.password}
+                  onChange={handleLoginChange}
+                  style={{ 
+                    width: '100%', 
+                    padding: '0.75rem', 
+                    border: '1px solid #ddd', 
+                    borderRadius: '4px',
+                    fontSize: '1rem'
+                  }}
+                  placeholder="Enter password"
+                  required
+                />
+              </div>
+              
+              {loginError && (
+                <div style={{ 
+                  backgroundColor: '#fee', 
+                  color: '#c33', 
+                  padding: '0.75rem', 
+                  borderRadius: '4px', 
+                  marginBottom: '1rem',
+                  fontSize: '0.9rem'
+                }}>
+                  {loginError}
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                style={{ 
+                  width: '100%', 
+                  padding: '0.75rem', 
+                  backgroundColor: '#007bff', 
+                  color: 'white', 
+                  border: 'none', 
+                  borderRadius: '4px',
+                  fontSize: '1rem',
+                  fontWeight: 'bold',
+                  cursor: 'pointer'
+                }}
+              >
+                Login
+              </button>
+            </form>
+            
+            <div style={{ marginTop: '1.5rem', padding: '1rem', backgroundColor: '#f8f9fa', borderRadius: '4px', fontSize: '0.85rem', color: '#666' }}>
+              <strong>Demo Credentials:</strong><br/>
+              Email: admin@sachinbansal.com<br/>
+              Password: admin123
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
 
     <div className="admin-dashboard">
@@ -1280,13 +1496,27 @@ const AdminDashboard = () => {
 
       )}
 
-
-
       <header className="admin-header">
 
         <h1>Admin Dashboard</h1>
 
         <p>Manage reviews and achievements</p>
+
+        <div style={{ position: 'absolute', top: '1rem', right: '1rem' }}>
+          <button 
+            onClick={adminLogout}
+            style={{ 
+              padding: '0.5rem 1rem', 
+              backgroundColor: '#dc3545', 
+              color: 'white', 
+              border: 'none', 
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Logout
+          </button>
+        </div>
 
       </header>
 
@@ -2394,7 +2624,12 @@ const AdminDashboard = () => {
 
                         <div className="book-details">
                           <div className="book-image">
-                            <img src={book.imageUrl} alt={book.title} />
+                            <img src={book.images && book.images.length > 0 ? book.images[0] : '/placeholder-book.png'} alt={book.title} />
+                            {book.images && book.images.length > 1 && (
+                              <div className="image-indicator">
+                                {book.images.length} images
+                              </div>
+                            )}
                           </div>
                           <div className="book-meta">
                             <p><strong>Price:</strong> ₹{book.price}</p>
@@ -2594,16 +2829,25 @@ const AdminDashboard = () => {
                     onChange={handleBookImageUpload}
                     required
                   />
-                  {bookForm.image && (
+                  {bookForm.imageFiles && bookForm.imageFiles.length > 0 && (
                     <div style={{ marginTop: '10px' }}>
-                      <img 
-                        src={URL.createObjectURL(bookForm.image)} 
-                        alt="Preview" 
-                        style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
-                      />
-                      <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
-                        Selected: {bookForm.image.name}
+                      <p style={{ fontSize: '0.8rem', color: '#666' }}>
+                        Selected images ({bookForm.imageFiles.length}):
                       </p>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                        {bookForm.images.map((image, index) => (
+                          <div key={index}>
+                            <img 
+                              src={image} 
+                              alt={`Preview ${index + 1}`} 
+                              style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+                            />
+                            <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>
+                              {index === 0 ? 'Front' : 'Back'}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>
@@ -2772,28 +3016,46 @@ const AdminDashboard = () => {
                       accept="image/*"
                       onChange={handleBookImageUpload}
                     />
-                    {bookForm.imageUrl && !bookForm.image && (
+                    {bookForm.images && bookForm.images.length > 0 && bookForm.imageFiles.length === 0 && (
                       <div style={{ marginTop: '10px' }}>
                         <p style={{ fontSize: '0.8rem', color: '#666' }}>
-                          Current image: {bookForm.imageUrl}
+                          Current images ({bookForm.images.length}):
                         </p>
-                        <img 
-                          src={bookForm.imageUrl} 
-                          alt="Current" 
-                          style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
-                        />
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          {bookForm.images.map((image, index) => (
+                            <div key={index}>
+                              <img 
+                                src={image} 
+                                alt={`Current ${index + 1}`} 
+                                style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+                              />
+                              <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>
+                                {index === 0 ? 'Front' : 'Back'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
-                    {bookForm.image && (
+                    {bookForm.imageFiles && bookForm.imageFiles.length > 0 && (
                       <div style={{ marginTop: '10px' }}>
-                        <img 
-                          src={URL.createObjectURL(bookForm.image)} 
-                          alt="Preview" 
-                          style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
-                        />
-                        <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
-                          New image: {bookForm.image.name}
+                        <p style={{ fontSize: '0.8rem', color: '#666' }}>
+                          New images ({bookForm.imageFiles.length}):
                         </p>
+                        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                          {bookForm.images.map((image, index) => (
+                            <div key={index}>
+                              <img 
+                                src={image} 
+                                alt={`Preview ${index + 1}`} 
+                                style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+                              />
+                              <p style={{ fontSize: '0.7rem', color: '#666', marginTop: '2px' }}>
+                                {index === 0 ? 'Front' : 'Back'}
+                              </p>
+                            </div>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>
