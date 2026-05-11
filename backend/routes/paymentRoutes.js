@@ -924,6 +924,27 @@ router.post("/payment-success", async (req, res) => {
     paymentRecord.status = "success";
     await paymentRecord.save();
 
+    // Decrease book quantity
+    try {
+      const bookResponse = await fetch(`${req.protocol}://${req.get('host')}/api/books/internal/decrease-quantity/${paymentRecord.bookId}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          quantity: 1 // Decrease by 1 for each order
+        }),
+      });
+      
+      if (bookResponse.ok) {
+        console.log(`📚 Book quantity decreased for ${paymentRecord.bookTitle}`);
+      } else {
+        console.error(`❌ Failed to decrease book quantity for ${paymentRecord.bookTitle}`);
+      }
+    } catch (bookError) {
+      console.error("Error decreasing book quantity:", bookError);
+    }
+
     console.log("Payment success webhook processed:", {
       order_id: razorpay_order_id,
       payment_id: razorpay_payment_id,

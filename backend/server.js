@@ -12,6 +12,7 @@ import reviewRoutes from "./routes/reviewRoutes.js";
 import questionRoutes from "./routes/questionRoutes.js";
 import youtubeRoutes from "./routes/youtubeRoutes.js";
 import paymentRoutes from "./routes/paymentRoutes.js";
+import bookRoutes from "./routes/bookRoutes.js";
 import { Resend } from "resend";
 import Payment from "./models/Payment.js";
 
@@ -25,6 +26,7 @@ export const resend = new Resend(process.env.RESEND_API);
 import "./models/Question.js";
 import "./models/YouTubeVideo.js";
 import "./models/Payment.js";
+import "./models/Book.js";
 
 const app = express();
 
@@ -61,6 +63,7 @@ app.use("/api/reviews", reviewRoutes);
 app.use("/api/questions", questionRoutes);
 app.use("/api/youtube-videos", youtubeRoutes);
 app.use("/api", paymentRoutes);
+app.use("/api/books", bookRoutes);
 
 // ===============================
 // Send Mail Route (Resend)

@@ -23,6 +23,26 @@ const AdminDashboard = () => {
 
   const [youtubeVideos, setYoutubeVideos] = useState([]);
 
+  // Books Management State
+  const [books, setBooks] = useState([]);
+  const [loadingBooks, setLoadingBooks] = useState(false);
+  const [bookError, setBookError] = useState('');
+  
+  // Book Form State
+  const [bookForm, setBookForm] = useState({
+    bookId: '',
+    title: '',
+    description: '',
+    price: '',
+    imageUrl: '',
+    quantity: '',
+    category: '',
+    classLevel: '',
+    author: '',
+    pages: '',
+    language: 'English'
+  });
+
   // Orders Management State
   const [orders, setOrders] = useState([]);
   const [orderTab, setOrderTab] = useState('success');
@@ -32,7 +52,7 @@ const AdminDashboard = () => {
   const [showNoteForm, setShowNoteForm] = useState(null);
   const [newNote, setNewNote] = useState('');
 
-  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question' | 'youtube' | 'add-youtube' | 'orders'
+  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question' | 'youtube' | 'add-youtube' | 'orders' | 'books' | 'add-book'
 
   const [view, setView] = useState('reviews');
 
@@ -152,6 +172,30 @@ const AdminDashboard = () => {
 
     fetchYoutubeVideos();
 
+  }, []);
+
+  // Fetch Books from API
+  const fetchBooks = async () => {
+    setLoadingBooks(true);
+    setBookError('');
+    try {
+      const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/admin/all');
+      const data = await response.json();
+      if (data.success) {
+        setBooks(data.books || []);
+      } else {
+        setBookError('Failed to fetch books');
+      }
+    } catch (err) {
+      console.error('Error fetching books:', err);
+      setBookError('Error connecting to server');
+    } finally {
+      setLoadingBooks(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBooks();
   }, []);
 
 
@@ -282,6 +326,90 @@ const AdminDashboard = () => {
   const successCount = orders.filter(o => o.status === 'success').length;
   const failedCount = orders.filter(o => o.status === 'failed').length;
   const pendingCount = orders.filter(o => o.status === 'pending').length;
+
+  // Book Management Functions
+  const updateBookQuantity = async (bookId, action, quantity) => {
+    try {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/update-quantity/${bookId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, quantity })
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchBooks(); // Refresh books list
+      } else {
+        alert('Failed to update book quantity');
+      }
+    } catch (err) {
+      alert('Error updating book quantity');
+    }
+  };
+
+  const toggleBookAvailability = async (bookId) => {
+    try {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/toggle-availability/${bookId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' }
+      });
+      const data = await response.json();
+      if (data.success) {
+        fetchBooks(); // Refresh books list
+      } else {
+        alert('Failed to update book availability');
+      }
+    } catch (err) {
+      alert('Error updating book availability');
+    }
+  };
+
+  const editBook = (book) => {
+    // TODO: Implement edit book functionality
+    alert('Edit book functionality coming soon!');
+  };
+
+  // Book Form Handlers
+  const handleBookChange = (e) => {
+    const { name, value } = e.target;
+    setBookForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+
+  const handleBookSubmit = async (e) => {
+    e.preventDefault();
+    try {
+      const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/admin/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(bookForm)
+      });
+      const data = await response.json();
+      if (data.success) {
+        setBookForm({
+          bookId: '',
+          title: '',
+          description: '',
+          price: '',
+          imageUrl: '',
+          quantity: '',
+          category: '',
+          classLevel: '',
+          author: '',
+          pages: '',
+          language: 'English'
+        });
+        fetchBooks();
+        alert('Book added successfully!');
+        setView('books');
+      } else {
+        alert('Failed to add book: ' + (data.message || 'Unknown error'));
+      }
+    } catch (err) {
+      alert('Error adding book');
+    }
+  };
 
 
 
@@ -1159,6 +1287,27 @@ const AdminDashboard = () => {
           >
 
             Manage Orders
+
+          </button>
+
+          <button
+
+            className={`sidebar-btn ${view === 'books' ? 'active' : ''}`}
+
+            onClick={() => {
+
+              setView('books');
+
+              // Fetch books when switching to books view
+              fetchBooks();
+
+            }}
+
+            style={{ marginBottom: '8px' }}
+
+          >
+
+            Manage Books
 
           </button>
 
@@ -2083,6 +2232,279 @@ const AdminDashboard = () => {
                   </div>
                 )}
               </div>
+            </div>
+
+          ) : view === 'books' ? (
+            <div className="books-admin">
+              <h2>Book Management</h2>
+              
+              <div className="books-header">
+                <button className="refresh-btn" onClick={fetchBooks} disabled={loadingBooks}>
+                  {loadingBooks ? 'Loading...' : 'Refresh Books'}
+                </button>
+                <button 
+                  className="btn-primary"
+                  onClick={() => setView('add-book')}
+                >
+                  + Add New Book
+                </button>
+              </div>
+
+              {/* Books List */}
+              <div className="books-content">
+                {bookError && <div className="error-message">{bookError}</div>}
+                
+                {loadingBooks ? (
+                  <div className="loading">Loading books...</div>
+                ) : books.length === 0 ? (
+                  <div className="no-books">
+                    <p>No books found. Add your first book!</p>
+                  </div>
+                ) : (
+                  <div className="books-list">
+                    {books.map((book) => (
+                      <div key={book.id} className={`book-card ${!book.isAvailable ? 'unavailable' : ''}`}>
+                        <div className="book-header">
+                          <div className="book-info">
+                            <h3>{book.title}</h3>
+                            <p className="book-id">ID: {book.bookId}</p>
+                            <p className="book-author">by {book.author}</p>
+                            <p className="book-category">{book.category} - {book.classLevel}</p>
+                          </div>
+                          <div className="book-status">
+                            <span className={`status-badge ${book.isAvailable ? 'available' : 'unavailable'}`}>
+                              {book.isAvailable ? 'Available' : 'Not Available'}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="book-details">
+                          <div className="book-image">
+                            <img src={book.imageUrl} alt={book.title} />
+                          </div>
+                          <div className="book-meta">
+                            <p><strong>Price:</strong> ₹{book.price}</p>
+                            <p><strong>Quantity:</strong> {book.quantity}</p>
+                            <p><strong>Pages:</strong> {book.pages}</p>
+                            <p><strong>Language:</strong> {book.language}</p>
+                          </div>
+                        </div>
+
+                        <div className="book-description">
+                          <p>{book.description}</p>
+                        </div>
+
+                        <div className="book-actions">
+                          <div className="quantity-controls">
+                            <label>Quantity:</label>
+                            <div className="quantity-buttons">
+                              <button 
+                                onClick={() => updateBookQuantity(book.bookId, 'subtract', 1)}
+                                disabled={book.quantity <= 0}
+                              >
+                                -
+                              </button>
+                              <span>{book.quantity}</span>
+                              <button 
+                                onClick={() => updateBookQuantity(book.bookId, 'add', 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                          </div>
+                          
+                          <button 
+                            className={`btn-secondary ${book.isAvailable ? '' : 'btn-success'}`}
+                            onClick={() => toggleBookAvailability(book.bookId)}
+                          >
+                            {book.isAvailable ? 'Mark Unavailable' : 'Mark Available'}
+                          </button>
+                          
+                          <button 
+                            className="btn-primary"
+                            onClick={() => editBook(book)}
+                          >
+                            Edit
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+
+          ) : view === 'add-book' ? (
+            <div className="add-book-form">
+              <h2>Add New Book</h2>
+              
+              <form onSubmit={handleBookSubmit}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="bookId">Book ID:</label>
+                    <input
+                      type="text"
+                      id="bookId"
+                      name="bookId"
+                      value={bookForm.bookId}
+                      onChange={handleBookChange}
+                      placeholder="e.g., MATH_10_CLASS"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="title">Book Title:</label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={bookForm.title}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Mathematics for Class 10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="author">Author:</label>
+                    <input
+                      type="text"
+                      id="author"
+                      name="author"
+                      value={bookForm.author}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Sachin Bansal"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="price">Price (₹):</label>
+                    <input
+                      type="number"
+                      id="price"
+                      name="price"
+                      value={bookForm.price}
+                      onChange={handleBookChange}
+                      placeholder="299"
+                      min="0"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="quantity">Quantity:</label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      value={bookForm.quantity}
+                      onChange={handleBookChange}
+                      placeholder="100"
+                      min="0"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="pages">Pages:</label>
+                    <input
+                      type="number"
+                      id="pages"
+                      name="pages"
+                      value={bookForm.pages}
+                      onChange={handleBookChange}
+                      placeholder="250"
+                      min="1"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="category">Category:</label>
+                    <input
+                      type="text"
+                      id="category"
+                      name="category"
+                      value={bookForm.category}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Mathematics"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="classLevel">Class Level:</label>
+                    <input
+                      type="text"
+                      id="classLevel"
+                      name="classLevel"
+                      value={bookForm.classLevel}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Class 10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="language">Language:</label>
+                    <select
+                      id="language"
+                      name="language"
+                      value={bookForm.language}
+                      onChange={handleBookChange}
+                    >
+                      <option value="English">English</option>
+                      <option value="Hindi">Hindi</option>
+                      <option value="Bilingual">Bilingual</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="imageUrl">Book Image URL:</label>
+                  <input
+                    type="url"
+                    id="imageUrl"
+                    name="imageUrl"
+                    value={bookForm.imageUrl}
+                    onChange={handleBookChange}
+                    placeholder="https://example.com/book-cover.jpg"
+                    required
+                  />
+                </div>
+
+                <div className="form-group">
+                  <label htmlFor="description">Description:</label>
+                  <textarea
+                    id="description"
+                    name="description"
+                    value={bookForm.description}
+                    onChange={handleBookChange}
+                    placeholder="Enter book description..."
+                    rows="4"
+                    required
+                  />
+                </div>
+
+                <div className="form-actions">
+                  <button type="button" className="btn-secondary" onClick={() => setView('books')}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Add Book
+                  </button>
+                </div>
+              </form>
             </div>
 
           ) : (
