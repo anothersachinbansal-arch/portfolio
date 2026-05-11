@@ -1,7 +1,20 @@
 import express from "express";
+import multer from "multer";
+import { v2 as cloudinary } from "cloudinary";
 import Book from "../models/Book.js";
 
 const router = express.Router();
+
+// Configure Cloudinary
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// Configure multer for memory storage
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
 
 // ===============================
 // Get All Books (Admin)
@@ -70,7 +83,7 @@ router.get("/available", async (req, res) => {
 // ===============================
 // Add New Book (Admin)
 // ===============================
-router.post("/admin/add", async (req, res) => {
+router.post("/admin/add", upload.single('image'), async (req, res) => {
   try {
     const {
       bookId,
@@ -83,11 +96,12 @@ router.post("/admin/add", async (req, res) => {
       classLevel,
       author,
       pages,
-      language
+      language,
+      isAvailable
     } = req.body;
 
-    // Validate required fields
-    if (!bookId || !title || !description || !price || !imageUrl || !category || !classLevel || !author || !pages) {
+    // Validate required fields - imageUrl is optional when uploading image
+    if (!bookId || !title || !description || !price || !category || !classLevel || !author || !pages) {
       return res.status(400).json({
         success: false,
         message: "Missing required fields"
@@ -103,18 +117,50 @@ router.post("/admin/add", async (req, res) => {
       });
     }
 
+    let finalImageUrl = imageUrl?.trim() || '';
+
+    // Upload image to Cloudinary if provided
+    if (req.file) {
+      try {
+        const result = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            {
+              resource_type: 'auto',
+              folder: 'books',
+              public_id: `book_${bookId}_${Date.now()}`
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          ).end(req.file.buffer);
+        });
+        
+        finalImageUrl = result.secure_url;
+        console.log(`📸 Image uploaded to Cloudinary: ${finalImageUrl}`);
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload image",
+          error: uploadError.message
+        });
+      }
+    }
+
     const book = new Book({
       bookId: bookId.trim(),
       title: title.trim(),
       description: description.trim(),
       price: Number(price),
-      imageUrl: imageUrl.trim(),
+      imageUrl: finalImageUrl,
       quantity: Number(quantity) || 0,
       category: category.trim(),
       classLevel: classLevel.trim(),
       author: author.trim(),
       pages: Number(pages),
-      language: language?.trim() || "English"
+      language: language?.trim() || "English",
+      isAvailable: isAvailable !== undefined ? isAvailable : true
     });
 
     await book.save();
@@ -206,6 +252,74 @@ router.put("/admin/update-quantity/:bookId", async (req, res) => {
 });
 
 // ===============================
+// Update Book Details (Admin)
+// ===============================
+router.put("/admin/update/:id", upload.single('image'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const updateData = req.body;
+
+    const book = await Book.findById(id);
+    if (!book) {
+      return res.status(404).json({
+        success: false,
+        message: "Book not found"
+      });
+    }
+
+    // Handle image upload if new image is provided
+    if (req.file) {
+      try {
+        const result = await new Promise((resolve, reject) => {
+          cloudinary.uploader.upload_stream(
+            {
+              resource_type: 'auto',
+              folder: 'books',
+              public_id: `book_${updateData.bookId || book.bookId}_${Date.now()}`
+            },
+            (error, result) => {
+              if (error) reject(error);
+              else resolve(result);
+            }
+          ).end(req.file.buffer);
+        });
+        
+        updateData.imageUrl = result.secure_url;
+        console.log(`📸 New image uploaded to Cloudinary: ${updateData.imageUrl}`);
+      } catch (uploadError) {
+        console.error("Error uploading image:", uploadError);
+        return res.status(500).json({
+          success: false,
+          message: "Failed to upload image",
+          error: uploadError.message
+        });
+      }
+    }
+
+    const updatedBook = await Book.findByIdAndUpdate(
+      id,
+      updateData,
+      { new: true, runValidators: true }
+    );
+
+    console.log(`✅ Book updated: ${updatedBook.title}`);
+    
+    res.json({
+      success: true,
+      message: "Book updated successfully",
+      book: updatedBook
+    });
+  } catch (error) {
+    console.error("Error updating book:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to update book",
+      error: error.message
+    });
+  }
+});
+
+// ===============================
 // Update Book Availability (Admin)
 // ===============================
 router.put("/admin/toggle-availability/:bookId", async (req, res) => {
@@ -237,24 +351,6 @@ router.put("/admin/toggle-availability/:bookId", async (req, res) => {
       error: error.message
     });
   }
-});
-
-// ===============================
-// Update Book Details (Admin)
-// ===============================
-router.put("/admin/update/:bookId", async (req, res) => {
-  try {
-    const { bookId } = req.params;
-    const updateData = req.body;
-
-    const book = await Book.findOne({ bookId });
-    if (!book) {
-      return res.status(404).json({
-        success: false,
-        message: "Book not found"
-      });
-    }
-
     // Update allowed fields
     const allowedFields = ['title', 'description', 'price', 'imageUrl', 'quantity', 'category', 'classLevel', 'author', 'pages', 'language'];
     
@@ -456,6 +552,40 @@ router.get("/prod-diag", async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
+      error: error.message
+    });
+  }
+});
+
+// Delete Book (Admin)
+// ===============================
+router.delete("/admin/delete/:bookId", async (req, res) => {
+  try {
+    const { bookId } = req.params;
+    
+    console.log(`🗑️ Deleting book with Book ID: ${bookId}`);
+    
+    const deletedBook = await Book.findOneAndDelete({ bookId: bookId });
+    
+    if (!deletedBook) {
+      return res.status(404).json({
+        success: false,
+        message: "Book not found"
+      });
+    }
+    
+    console.log(`✅ Book deleted: ${deletedBook.title}`);
+    
+    res.json({
+      success: true,
+      message: "Book deleted successfully",
+      book: deletedBook
+    });
+  } catch (error) {
+    console.error("Error deleting book:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete book",
       error: error.message
     });
   }
