@@ -45,10 +45,12 @@ router.get("/admin/all", async (req, res) => {
 // ===============================
 router.get("/available", async (req, res) => {
   try {
+    console.log("🔍 Fetching available books...");
     const books = await Book.find({ 
       isAvailable: true,
       quantity: { $gt: 0 }
     }).sort({ createdAt: -1 });
+    console.log(`📚 Found ${books.length} available books`);
     
     res.json({
       success: true,
