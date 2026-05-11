@@ -6,6 +6,7 @@ import './Admin.css';
 import './AdminOrders.css';
 
 import { useReviews } from '../context/ReviewsContext';
+import adminAPI, { isAuthenticated } from '../../services/apiService.js';
 
 
 
@@ -188,18 +189,11 @@ const AdminDashboard = () => {
     setLoadingBooks(true);
     setBookError('');
     try {
-      const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/admin/all', {
-        headers: getAdminHeaders()
-      });
-      const data = await response.json();
-      if (data.success) {
-        setBooks(data.books || []);
-      } else {
-        setBookError('Failed to fetch books');
-      }
+      const data = await adminAPI.getBooks();
+      setBooks(data.books || []);
     } catch (err) {
       console.error('Error fetching books:', err);
-      setBookError('Error connecting to server');
+      setBookError(err.message || 'Error connecting to server');
     } finally {
       setLoadingBooks(false);
     }
@@ -208,8 +202,7 @@ const AdminDashboard = () => {
   // Check authentication on component load
   useEffect(() => {
     const checkAuth = () => {
-      const token = localStorage.getItem('adminToken');
-      if (token) {
+      if (isAuthenticated()) {
         setIsLoggedIn(true);
         fetchBooks(); // Only fetch books if authenticated
       } else {
@@ -236,38 +229,28 @@ const AdminDashboard = () => {
   // Admin Login Function
   const adminLogin = async (email, password) => {
     try {
-      const response = await fetch('https://portfolio-x0gj.onrender.com/api/auth/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
+      const response = await adminAPI.login(email, password);
       
-      const data = await response.json();
-      
-      if (data.success) {
-        localStorage.setItem('adminToken', data.token);
-        localStorage.setItem('adminInfo', JSON.stringify(data.admin));
-        return { success: true, data };
+      if (response.success) {
+        setIsLoggedIn(true);
+        return { success: true, data: response };
       } else {
-        return { success: false, message: data.message };
+        return { success: false, message: response.message };
       }
     } catch (error) {
       console.error('Login error:', error);
-      return { success: false, message: 'Login failed' };
+      return { success: false, message: error.message || 'Login failed' };
     }
   };
 
   // Check if admin is logged in
   const isAdminLoggedIn = () => {
-    return !!localStorage.getItem('adminToken');
+    return isAuthenticated();
   };
 
   // Admin Logout Function
   const adminLogout = () => {
-    localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminInfo');
-    setIsLoggedIn(false);
-    setView('dashboard');
+    adminAPI.logout();
   };
 
   // Handle login form input changes
@@ -304,23 +287,16 @@ const AdminDashboard = () => {
     }
   };
 
-  // Fetch Orders from API usl
+  // Fetch Orders from API
   const fetchOrders = async () => {
     setLoadingOrders(true);
     setOrderError('');
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/purchased-books`, {
-        headers: getAdminHeaders()
-      });
-      const data = await response.json();
-      if (data.success) {
-        setOrders(data.payments || []);
-      } else {
-        setOrderError('Failed to fetch orders');
-      }
+      const data = await adminAPI.getOrders();
+      setOrders(data.payments || []);
     } catch (err) {
       console.error('Error fetching orders:', err);
-      setOrderError('Error connecting to server');
+      setOrderError(err.message || 'Error connecting to server');
     } finally {
       setLoadingOrders(false);
     }
@@ -455,11 +431,7 @@ const AdminDashboard = () => {
   const toggleBookAvailability = async (bookId) => {
     try {
       console.log(`🔄 Toggling availability for book: ${bookId}`);
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/toggle-availability/${bookId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' }
-      });
-      const data = await response.json();
+      const data = await adminAPI.toggleAvailability(bookId);
       console.log('📊 Toggle availability response:', data);
       
       if (data.success) {
@@ -471,7 +443,7 @@ const AdminDashboard = () => {
       }
     } catch (err) {
       console.error('❌ Error toggling book availability:', err);
-      alert('Error updating book availability. Please try again.');
+      alert(err.message || 'Error updating book availability. Please try again.');
     }
   };
 
@@ -481,12 +453,7 @@ const AdminDashboard = () => {
     }
 
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/delete/${bookId}`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' }
-      });
-
-      const data = await response.json();
+      const data = await adminAPI.deleteBook(bookId);
       
       if (data.success) {
         alert('Book deleted successfully!');
@@ -496,7 +463,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error deleting book:', error);
-      alert('Error deleting book. Please try again.');
+      alert(error.message || 'Error deleting book. Please try again.');
     }
   };
 
@@ -568,35 +535,30 @@ const AdminDashboard = () => {
           formData.append('images', file);
         });
         
-        const url = isEditing 
-          ? `https://portfolio-x0gj.onrender.com/api/books/admin/update/${editingBookId}`
-          : 'https://portfolio-x0gj.onrender.com/api/books/admin/add';
-        
-        const method = isEditing ? 'PUT' : 'POST';
-        
-        response = await fetch(url, {
-          method: method,
-          body: formData
-          // Don't set Content-Type header for FormData - browser sets it automatically with boundary
-        });
+        // Use centralized API service for FormData
+        if (isEditing) {
+          response = await adminAPI.updateBook(editingBookId, formData);
+        } else {
+          response = await adminAPI.addBook(formData);
+        }
       } else {
-        // Use JSON for no image case
-        const url = isEditing 
-          ? `https://portfolio-x0gj.onrender.com/api/books/admin/update/${editingBookId}`
-          : 'https://portfolio-x0gj.onrender.com/api/books/admin/add';
-        
-        const method = isEditing ? 'PUT' : 'POST';
-        
-        response = await fetch(url, {
-          method: method,
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(bookForm)
+        // Use JSON for no image uploads - create FormData anyway for consistency
+        const formData = new FormData();
+        Object.keys(bookForm).forEach(key => {
+          if (key !== 'imageFiles' && key !== 'images') {
+            formData.append(key, bookForm[key]);
+          }
         });
+        
+        if (isEditing) {
+          response = await adminAPI.updateBook(editingBookId, formData);
+        } else {
+          response = await adminAPI.addBook(formData);
+        }
       }
       
-      const data = await response.json();
-      if (data.success) {
-        alert(`Book ${isEditing ? 'updated' : 'added'} successfully!`);
+      if (response.success) {
+        alert(isEditing ? 'Book updated successfully!' : 'Book added successfully!');
         setBookForm({
           bookId: '',
           title: '',
@@ -616,11 +578,11 @@ const AdminDashboard = () => {
         setView('books');
         fetchBooks();
       } else {
-        alert(`Failed to ${isEditing ? 'update' : 'add'} book: ` + data.message);
+        alert(response.message || 'Failed to save book');
       }
     } catch (error) {
-      console.error(`Error ${editingBookId ? 'updating' : 'adding'} book:`, error);
-      alert(`Error ${editingBookId ? 'updating' : 'adding'} book. Please try again.`);
+      console.error('Error saving book:', error);
+      alert(error.message || 'Error saving book. Please try again.');
     }
   };
 
