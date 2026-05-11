@@ -92,6 +92,10 @@ const Navbar = () => {
 
         <div className={`navbar-menu ${isMenuOpen ? "active" : ""}`}>
           <div className="navbar-start">
+            <Link to="/books" className="navbar-item" onClick={() => setIsMenuOpen(false)}>
+              <i className="fas fa-shopping-bag"></i>
+              <span>SHOP</span>
+            </Link>
             <button
               className="navbar-item"
               onClick={() => scrollToSection("about")}
@@ -109,10 +113,6 @@ const Navbar = () => {
             <Link to="/career-aptitude-test" className="navbar-item" onClick={() => setIsMenuOpen(false)}>
               <i className="fas fa-briefcase"></i>
               <span>APTITUDE TEST</span>
-            </Link>
-            <Link to="/books" className="navbar-item" onClick={() => setIsMenuOpen(false)}>
-              <i className="fas fa-book"></i>
-              <span>BOOKS</span>
             </Link>
 
             <div className="login-button">

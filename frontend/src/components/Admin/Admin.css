@@ -1484,6 +1484,32 @@
   color: #2c3e50;
 }
 
+.transaction-id {
+  font-family: monospace;
+  font-size: 0.85rem;
+  background: #f8f9fa;
+  padding: 2px 6px;
+  border-radius: 4px;
+  word-break: break-all;
+}
+
+.whatsapp-link {
+  margin-left: 8px;
+  text-decoration: none;
+  transition: transform 0.2s ease;
+}
+
+.whatsapp-icon {
+  color: #25D366;
+  font-size: 1.1rem;
+  cursor: pointer;
+}
+
+.whatsapp-link:hover .whatsapp-icon {
+  color: #128C7E;
+  transform: scale(1.1);
+}
+
 .book-description {
   margin-bottom: 20px;
   padding: 12px;

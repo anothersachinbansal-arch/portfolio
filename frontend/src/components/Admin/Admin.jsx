@@ -2221,7 +2221,18 @@ const AdminDashboard = () => {
                           </div>
                           <div className="detail-row">
                             <span className="label">Mobile:</span>
-                            <span className="value">{order.mobile}</span>
+                            <span className="value">
+                              {order.mobile}
+                              <a 
+                                href={`https://wa.me/${order.mobile.replace(/\D/g, '')}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="whatsapp-link"
+                                title="Chat on WhatsApp"
+                              >
+                                <i className="fab fa-whatsapp whatsapp-icon"></i>
+                              </a>
+                            </span>
                           </div>
                           <div className="detail-row">
                             <span className="label">Address:</span>

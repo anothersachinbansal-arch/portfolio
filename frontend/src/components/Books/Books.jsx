@@ -351,8 +351,7 @@ const Books = () => {
   return (
     <section className="books-section">
       <div className="books-container">
-        <h1 className="section-label">📚 My Books</h1>
-        <p className="section-sub">Authored for CBSE students — Political Science & Sociology</p>
+        
 
         {/* Loading State */}
         {loading && (
