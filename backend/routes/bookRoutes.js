@@ -2,6 +2,7 @@ import express from "express";
 import multer from "multer";
 import { v2 as cloudinary } from "cloudinary";
 import Book from "../models/Book.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -19,7 +20,7 @@ const upload = multer({ storage: storage });
 // ===============================
 // Get All Books (Admin)
 // ===============================
-router.get("/admin/all", async (req, res) => {
+router.get("/admin/all", adminAuth, async (req, res) => {
   try {
     const books = await Book.find().sort({ createdAt: -1 });
     
@@ -83,7 +84,7 @@ router.get("/available", async (req, res) => {
 // ===============================
 // Add New Book (Admin)
 // ===============================
-router.post("/admin/add", upload.single('image'), async (req, res) => {
+router.post("/admin/add", adminAuth, upload.array('images', 2), async (req, res) => {
   try {
     const {
       bookId,
@@ -119,30 +120,34 @@ router.post("/admin/add", upload.single('image'), async (req, res) => {
 
     let finalImageUrl = imageUrl?.trim() || '';
 
-    // Upload image to Cloudinary if provided
-    if (req.file) {
+    // Handle image uploads if provided
+    let finalImages = [];
+    
+    if (req.files && req.files.length > 0) {
       try {
-        const result = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            {
-              resource_type: 'auto',
-              folder: 'books',
-              public_id: `book_${bookId}_${Date.now()}`
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(req.file.buffer);
+        const uploadPromises = req.files.map((file, index) => {
+          return new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+              {
+                resource_type: 'auto',
+                folder: 'books',
+                public_id: `book_${bookId}_${index + 1}_${Date.now()}`
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result.secure_url);
+              }
+            ).end(file.buffer);
+          });
         });
         
-        finalImageUrl = result.secure_url;
-        console.log(`📸 Image uploaded to Cloudinary: ${finalImageUrl}`);
+        finalImages = await Promise.all(uploadPromises);
+        console.log(`📸 ${finalImages.length} images uploaded to Cloudinary`);
       } catch (uploadError) {
-        console.error("Error uploading image:", uploadError);
+        console.error("Error uploading images:", uploadError);
         return res.status(500).json({
           success: false,
-          message: "Failed to upload image",
+          message: "Failed to upload images",
           error: uploadError.message
         });
       }
@@ -153,7 +158,7 @@ router.post("/admin/add", upload.single('image'), async (req, res) => {
       title: title.trim(),
       description: description.trim(),
       price: Number(price),
-      imageUrl: finalImageUrl,
+      images: finalImages,
       quantity: Number(quantity) || 0,
       category: category.trim(),
       classLevel: classLevel.trim(),
@@ -174,7 +179,7 @@ router.post("/admin/add", upload.single('image'), async (req, res) => {
         title: book.title,
         description: book.description,
         price: book.price,
-        imageUrl: book.imageUrl,
+        images: book.images,
         quantity: book.quantity,
         isAvailable: book.isAvailable,
         category: book.category,
@@ -197,7 +202,7 @@ router.post("/admin/add", upload.single('image'), async (req, res) => {
 // ===============================
 // Update Book Quantity (Admin)
 // ===============================
-router.put("/admin/update-quantity/:bookId", async (req, res) => {
+router.put("/admin/update-quantity/:bookId", adminAuth, async (req, res) => {
   try {
     const { bookId } = req.params;
     const { quantity, action } = req.body; // action can be 'set', 'add', 'subtract'
@@ -254,7 +259,7 @@ router.put("/admin/update-quantity/:bookId", async (req, res) => {
 // ===============================
 // Update Book Details (Admin)
 // ===============================
-router.put("/admin/update/:id", upload.single('image'), async (req, res) => {
+router.put("/admin/update/:id", adminAuth, upload.array('images', 2), async (req, res) => {
   try {
     const { id } = req.params;
     const updateData = req.body;
@@ -267,30 +272,32 @@ router.put("/admin/update/:id", upload.single('image'), async (req, res) => {
       });
     }
 
-    // Handle image upload if new image is provided
-    if (req.file) {
+    // Handle image uploads if new images are provided
+    if (req.files && req.files.length > 0) {
       try {
-        const result = await new Promise((resolve, reject) => {
-          cloudinary.uploader.upload_stream(
-            {
-              resource_type: 'auto',
-              folder: 'books',
-              public_id: `book_${updateData.bookId || book.bookId}_${Date.now()}`
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
-            }
-          ).end(req.file.buffer);
+        const uploadPromises = req.files.map((file, index) => {
+          return new Promise((resolve, reject) => {
+            cloudinary.uploader.upload_stream(
+              {
+                resource_type: 'auto',
+                folder: 'books',
+                public_id: `book_${updateData.bookId || book.bookId}_${index + 1}_${Date.now()}`
+              },
+              (error, result) => {
+                if (error) reject(error);
+                else resolve(result.secure_url);
+              }
+            ).end(file.buffer);
+          });
         });
         
-        updateData.imageUrl = result.secure_url;
-        console.log(`📸 New image uploaded to Cloudinary: ${updateData.imageUrl}`);
+        updateData.images = await Promise.all(uploadPromises);
+        console.log(`📸 ${updateData.images.length} new images uploaded to Cloudinary`);
       } catch (uploadError) {
-        console.error("Error uploading image:", uploadError);
+        console.error("Error uploading images:", uploadError);
         return res.status(500).json({
           success: false,
-          message: "Failed to upload image",
+          message: "Failed to upload images",
           error: uploadError.message
         });
       }
@@ -322,7 +329,7 @@ router.put("/admin/update/:id", upload.single('image'), async (req, res) => {
 // ===============================
 // Update Book Availability (Admin)
 // ===============================
-router.put("/admin/toggle-availability/:bookId", async (req, res) => {
+router.put("/admin/toggle-availability/:bookId", adminAuth, async (req, res) => {
   try {
     const { bookId } = req.params;
 
@@ -356,7 +363,7 @@ router.put("/admin/toggle-availability/:bookId", async (req, res) => {
 // ===============================
 // Delete Book (Admin)
 // ===============================
-router.delete("/admin/delete/:bookId", async (req, res) => {
+router.delete("/admin/delete/:bookId", adminAuth, async (req, res) => {
   try {
     const { bookId } = req.params;
 
@@ -387,7 +394,7 @@ router.delete("/admin/delete/:bookId", async (req, res) => {
 // ===============================
 // Decrease Book Quantity (Internal Use)
 // ===============================
-router.post("/internal/decrease-quantity/:bookId", async (req, res) => {
+router.post("/internal/decrease-quantity/:bookId", adminAuth, async (req, res) => {
   try {
     const { bookId } = req.params;
     const { quantity = 1 } = req.body;

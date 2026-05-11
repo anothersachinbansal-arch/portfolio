@@ -3,6 +3,7 @@ import Razorpay from "razorpay";
 import crypto from "crypto";
 import Payment from "../models/Payment.js";
 import { resend } from "../server.js";
+import adminAuth from "../middleware/adminAuth.js";
 
 const router = express.Router();
 
@@ -673,7 +674,7 @@ router.get("/admin/purchased-books", async (req, res) => {
 // ===============================
 // Mark Book as Delivered
 // ===============================
-router.put("/admin/mark-delivered/:paymentId", async (req, res) => {
+router.put("/admin/mark-delivered/:paymentId", adminAuth, async (req, res) => {
   try {
     const { paymentId } = req.params;
     
@@ -793,9 +794,9 @@ router.put("/admin/mark-delivered/:paymentId", async (req, res) => {
 });
 
 // ===============================
-// Add Note to Order
+// Add Admin Note to Payment
 // ===============================
-router.post("/admin/add-note/:paymentId", async (req, res) => {
+router.post("/admin/add-note/:paymentId", adminAuth, async (req, res) => {
   try {
     const { paymentId } = req.params;
     const { text } = req.body;
@@ -842,9 +843,9 @@ router.post("/admin/add-note/:paymentId", async (req, res) => {
 });
 
 // ===============================
-// Delete Note from Order
+// Delete Admin Note from Payment
 // ===============================
-router.delete("/admin/delete-note/:paymentId/:noteId", async (req, res) => {
+router.delete("/admin/delete-note/:paymentId/:noteId", adminAuth, async (req, res) => {
   try {
     const { paymentId, noteId } = req.params;
     

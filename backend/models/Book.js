@@ -23,11 +23,10 @@ const bookSchema = new mongoose.Schema({
     required: true,
     min: 0,
   },
-  imageUrl: {
+  images: [{
     type: String,
-    required: true,
     trim: true,
-  },
+  }],
   
   // Inventory Management
   quantity: {
