@@ -351,18 +351,24 @@ const AdminDashboard = () => {
 
   const toggleBookAvailability = async (bookId) => {
     try {
+      console.log(`🔄 Toggling availability for book: ${bookId}`);
       const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/toggle-availability/${bookId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' }
       });
       const data = await response.json();
+      console.log('📊 Toggle availability response:', data);
+      
       if (data.success) {
+        alert(`Book ${data.isAvailable ? 'marked as available' : 'marked as unavailable'} successfully!`);
         fetchBooks(); // Refresh books list
       } else {
-        alert('Failed to update book availability');
+        console.error('❌ Toggle availability failed:', data);
+        alert(`Failed to update book availability: ${data.message || 'Unknown error'}`);
       }
     } catch (err) {
-      alert('Error updating book availability');
+      console.error('❌ Error toggling book availability:', err);
+      alert('Error updating book availability. Please try again.');
     }
   };
 
@@ -2409,13 +2415,6 @@ const AdminDashboard = () => {
                               </button>
                             </div>
                           </div>
-                          
-                          <button 
-                            className={`btn-secondary ${book.isAvailable ? '' : 'btn-success'}`}
-                            onClick={() => toggleBookAvailability(book.bookId)}
-                          >
-                            {book.isAvailable ? 'Mark Unavailable' : 'Mark Available'}
-                          </button>
                           
                           <button 
                             className="btn-primary"

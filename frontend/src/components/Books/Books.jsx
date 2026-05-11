@@ -210,7 +210,8 @@ const Books = () => {
             category: book.category,
             classLevel: book.classLevel,
             pages: book.pages,
-            language: book.language
+            language: book.language,
+            isAvailable: book.isAvailable !== undefined ? book.isAvailable : true
           }));
           setBooks(transformedBooks);
         } else {
