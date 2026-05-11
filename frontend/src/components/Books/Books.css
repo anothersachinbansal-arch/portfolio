@@ -316,23 +316,25 @@
 .price-value { font-family: 'Lora', serif; font-size: 1.5rem; font-weight: 700; color: #1a2340; }
 
 .buy-btn {
+  padding: 12px 24px;
+  background-color: #2ecc71;
+  color: white;
   border: none;
-  border-radius: 50px;
-  padding: 10px 24px;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s;
   font-family: 'Nunito', sans-serif;
   font-size: 0.85rem;
-  font-weight: 700;
-  cursor: pointer;
-  letter-spacing: 0.3px;
-  transition: transform 0.25s ease, box-shadow 0.25s ease, opacity 0.2s;
-  color: #fff;
 }
-.buy-btn:hover:not(:disabled) { transform: translateY(-2px); }
-.buy-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-.card-ps12 .buy-btn  { background: linear-gradient(135deg,#f97316,#fb923c); box-shadow: 0 6px 20px rgba(249,115,22,0.3); }
-.card-ps11 .buy-btn  { background: linear-gradient(135deg,#3b82f6,#60a5fa); box-shadow: 0 6px 20px rgba(59,130,246,0.3); }
-.card-soc12 .buy-btn { background: linear-gradient(135deg,#10b981,#34d399); box-shadow: 0 6px 20px rgba(16,185,129,0.3); }
-.card-soc11 .buy-btn { background: linear-gradient(135deg,#8b5cf6,#a78bfa); box-shadow: 0 6px 20px rgba(139,92,246,0.3); }
+.buy-btn:hover:not(:disabled) {
+  background-color: #27ae60;
+}
+.buy-btn:disabled { 
+  opacity: 0.5; 
+  cursor: not-allowed;
+  background-color: #95a5a6;
+}
 
 /* Bookmark */
 .bookmark-btn {
@@ -576,6 +578,18 @@
 .lightbox-buy-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 12px 32px rgba(126, 34, 206, 0.4);
+}
+
+.lightbox-buy-btn:disabled {
+  background: #95a5a6 !important;
+  cursor: not-allowed !important;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+.lightbox-buy-btn:disabled:hover {
+  transform: none !important;
+  box-shadow: none !important;
 }
 
 /* Close Button */

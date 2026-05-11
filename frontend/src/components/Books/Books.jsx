@@ -152,7 +152,7 @@ const Lightbox = ({ book, slideIndex, onClose, onBuyNow }) => {
           <div className="lightbox-description">
             {book.description}
           </div>
-          <button 
+          <button
             className="lightbox-buy-btn"
             onClick={(e) => { 
               e.stopPropagation(); 
@@ -162,8 +162,9 @@ const Lightbox = ({ book, slideIndex, onClose, onBuyNow }) => {
                 onBuyNow(book);
               }, 100);
             }}
+            disabled={!book.isAvailable}
           >
-            Buy Now - ₹{book.price}
+            {book.isAvailable ? `Buy Now - ₹${book.price}` : "Not Available"}
           </button>
         </div>
       </div>
@@ -415,9 +416,11 @@ const Books = () => {
                         <button
                           className="buy-btn"
                           onClick={() => handleBuyNow(book)}
-                          disabled={paymentLoading !== null}
+                          disabled={paymentLoading !== null || !book.isAvailable}
                         >
-                          {paymentLoading === book.id ? "Processing..." : paymentLoading !== null ? "Please wait..." : "Buy Now"}
+                          {paymentLoading === book.id ? "Processing..." : 
+                           paymentLoading !== null ? "Please wait..." : 
+                           !book.isAvailable ? "Not Available" : "Buy Now"}
                         </button>
                       </div>
                     </div>

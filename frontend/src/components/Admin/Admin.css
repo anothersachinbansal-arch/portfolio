@@ -1291,3 +1291,414 @@
     }
 
   }
+
+/* ===============================
+   Books Management UI
+   =============================== */
+
+.books-admin {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+}
+
+.books-admin h2 {
+  color: #2c3e50;
+  margin-bottom: 20px;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.books-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 25px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.refresh-btn {
+  padding: 8px 16px;
+  background: #95a5a6;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.3s;
+}
+
+.refresh-btn:hover:not(:disabled) {
+  background: #7f8c8d;
+}
+
+.refresh-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.books-content {
+  min-height: 200px;
+}
+
+.loading, .no-books, .error-message {
+  text-align: center;
+  padding: 40px;
+  color: #7f8c8d;
+  font-size: 1.1rem;
+}
+
+.error-message {
+  color: #e74c3c;
+  background: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: 4px;
+}
+
+.books-list {
+  display: grid;
+  gap: 20px;
+}
+
+.book-card {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 20px;
+  transition: all 0.3s ease;
+}
+
+.book-card:hover {
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+  transform: translateY(-2px);
+}
+
+.book-card.unavailable {
+  opacity: 0.7;
+  background: #f8f9fa;
+  border-color: #dee2e6;
+}
+
+.book-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 15px;
+  gap: 15px;
+}
+
+.book-info h3 {
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 5px 0;
+  line-height: 1.3;
+}
+
+.book-id {
+  color: #6c757d;
+  font-size: 0.85rem;
+  font-family: 'Courier New', monospace;
+  margin: 0 0 3px 0;
+}
+
+.book-author {
+  color: #495057;
+  font-size: 0.9rem;
+  margin: 0 0 3px 0;
+  font-style: italic;
+}
+
+.book-category {
+  color: #6c757d;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.book-status {
+  flex-shrink: 0;
+}
+
+.status-badge {
+  padding: 4px 12px;
+  border-radius: 20px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status-badge.available {
+  background: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+}
+
+.status-badge.unavailable {
+  background: #f8d7da;
+  color: #721c24;
+  border: 1px solid #f5c6cb;
+}
+
+.book-details {
+  display: flex;
+  gap: 20px;
+  margin-bottom: 15px;
+  align-items: center;
+}
+
+.book-image {
+  flex-shrink: 0;
+  width: 80px;
+  height: 100px;
+  border-radius: 4px;
+  overflow: hidden;
+  background: #e9ecef;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.book-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.book-meta {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 8px;
+}
+
+.book-meta p {
+  margin: 0;
+  font-size: 0.9rem;
+  color: #495057;
+}
+
+.book-meta strong {
+  color: #2c3e50;
+}
+
+.book-description {
+  margin-bottom: 20px;
+  padding: 12px;
+  background: #ffffff;
+  border-radius: 4px;
+  border: 1px solid #e9ecef;
+}
+
+.book-description p {
+  margin: 0;
+  color: #495057;
+  font-size: 0.9rem;
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.book-actions {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.quantity-controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.quantity-controls label {
+  font-size: 0.9rem;
+  color: #495057;
+  font-weight: 500;
+}
+
+.quantity-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.quantity-buttons button {
+  background: #f8f9fa;
+  border: none;
+  padding: 6px 12px;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #495057;
+  transition: background 0.2s;
+  width: 36px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.quantity-buttons button:hover:not(:disabled) {
+  background: #e9ecef;
+}
+
+.quantity-buttons button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.quantity-buttons span {
+  padding: 6px 12px;
+  background: #ffffff;
+  border-left: 1px solid #dee2e6;
+  border-right: 1px solid #dee2e6;
+  min-width: 40px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.btn-primary, .btn-secondary, .btn-success {
+  padding: 8px 16px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+  transition: all 0.3s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn-primary:hover {
+  background: #0056b3;
+}
+
+.btn-secondary {
+  background: #6c757d;
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: #545b62;
+}
+
+.btn-success {
+  background: #28a745;
+  color: white;
+}
+
+.btn-success:hover {
+  background: #1e7e34;
+}
+
+.btn-delete {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-delete:hover {
+  background: #c82333;
+}
+
+/* ===============================
+   Responsive Design
+   =============================== */
+
+@media (max-width: 768px) {
+  .books-admin {
+    padding: 15px;
+  }
+  
+  .books-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .book-header {
+    flex-direction: column;
+    gap: 10px;
+  }
+  
+  .book-status {
+    align-self: flex-start;
+  }
+  
+  .book-details {
+    flex-direction: column;
+    text-align: center;
+    gap: 15px;
+  }
+  
+  .book-image {
+    width: 120px;
+    height: 150px;
+    margin: 0 auto;
+  }
+  
+  .book-meta {
+    grid-template-columns: 1fr;
+    text-align: left;
+  }
+  
+  .book-actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+  
+  .quantity-controls {
+    justify-content: center;
+  }
+  
+  .btn-primary, .btn-secondary, .btn-success {
+    text-align: center;
+    padding: 10px 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .books-admin {
+    padding: 10px;
+  }
+  
+  .book-card {
+    padding: 15px;
+  }
+  
+  .book-info h3 {
+    font-size: 1rem;
+  }
+  
+  .book-image {
+    width: 100px;
+    height: 125px;
+  }
+  
+  .quantity-buttons button {
+    width: 32px;
+    height: 28px;
+    padding: 4px 8px;
+  }
+  
+  .quantity-buttons span {
+    padding: 4px 8px;
+    min-width: 35px;
+    font-size: 0.85rem;
+  }
+}

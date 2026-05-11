@@ -408,13 +408,23 @@ router.post("/internal/decrease-quantity/:bookId", async (req, res) => {
     }
 
     book.quantity -= quantity;
+    
+    // Automatically mark as unavailable if quantity reaches 0
+    let availabilityChanged = false;
+    if (book.quantity === 0 && book.isAvailable) {
+      book.isAvailable = false;
+      availabilityChanged = true;
+      console.log(`📚 Book "${book.title}" is now out of stock - marked as unavailable`);
+    }
+    
     await book.save();
 
     res.json({
       success: true,
-      message: "Book quantity decreased successfully",
+      message: "Book quantity decreased successfully" + (availabilityChanged ? " and marked as unavailable" : ""),
       remainingQuantity: book.quantity,
-      isAvailable: book.isAvailable
+      isAvailable: book.isAvailable,
+      availabilityChanged: availabilityChanged
     });
   } catch (error) {
     console.error("Error decreasing book quantity:", error);

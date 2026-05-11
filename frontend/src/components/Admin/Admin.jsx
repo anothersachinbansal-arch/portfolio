@@ -35,13 +35,16 @@ const AdminDashboard = () => {
     description: '',
     price: '',
     imageUrl: '',
+    image: null,
     quantity: '',
     category: '',
     classLevel: '',
     author: '',
     pages: '',
-    language: 'English'
+    language: '',
+    isAvailable: true
   });
+  const [editingBookId, setEditingBookId] = useState(null);
 
   // Orders Management State
   const [orders, setOrders] = useState([]);
@@ -52,7 +55,7 @@ const AdminDashboard = () => {
   const [showNoteForm, setShowNoteForm] = useState(null);
   const [newNote, setNewNote] = useState('');
 
-  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question' | 'youtube' | 'add-youtube' | 'orders' | 'books' | 'add-book'
+  // view can be 'reviews' | 'upload' | 'manage' | 'questions' | 'add-question' | 'youtube' | 'add-youtube' | 'orders' | 'books' | 'add-book' | 'edit-book'
 
   const [view, setView] = useState('reviews');
 
@@ -363,9 +366,50 @@ const AdminDashboard = () => {
     }
   };
 
+  const deleteBook = async (bookId, bookTitle) => {
+    if (!window.confirm(`Are you sure you want to delete "${bookTitle}"? This action cannot be undone.`)) {
+      return;
+    }
+
+    try {
+      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/delete/${bookId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+      });
+
+      const data = await response.json();
+      
+      if (data.success) {
+        alert('Book deleted successfully!');
+        fetchBooks(); // Refresh books list
+      } else {
+        alert('Failed to delete book: ' + data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting book:', error);
+      alert('Error deleting book. Please try again.');
+    }
+  };
+
   const editBook = (book) => {
-    // TODO: Implement edit book functionality
-    alert('Edit book functionality coming soon!');
+    // Set the form with current book data
+    setBookForm({
+      bookId: book.bookId,
+      title: book.title,
+      description: book.description,
+      price: book.price,
+      imageUrl: book.imageUrl,
+      image: null, // Reset image when editing
+      quantity: book.quantity,
+      category: book.category,
+      classLevel: book.classLevel,
+      author: book.author,
+      pages: book.pages,
+      language: book.language,
+      isAvailable: book.isAvailable
+    });
+    setEditingBookId(book._id || book.id);
+    setView('edit-book'); // Switch to edit book view
   };
 
   // Book Form Handlers
@@ -377,40 +421,93 @@ const AdminDashboard = () => {
     }));
   };
 
+  const handleBookImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setBookForm(prev => ({
+        ...prev,
+        image: file,
+        imageUrl: '' // Clear existing URL when new image is selected
+      }));
+    }
+  };
+
   const handleBookSubmit = async (e) => {
     e.preventDefault();
     try {
-      const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/admin/add', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(bookForm)
-      });
+      const isEditing = editingBookId !== null;
+      
+      let response;
+      
+      if (bookForm.image) {
+        // Use FormData for image upload
+        const formData = new FormData();
+        
+        // Add all book fields except image and imageUrl
+        Object.keys(bookForm).forEach(key => {
+          if (key !== 'image' && key !== 'imageUrl') {
+            formData.append(key, bookForm[key]);
+          }
+        });
+        
+        // Add image file
+        formData.append('image', bookForm.image);
+        
+        const url = isEditing 
+          ? `https://portfolio-x0gj.onrender.com/api/books/admin/update/${editingBookId}`
+          : 'https://portfolio-x0gj.onrender.com/api/books/admin/add';
+        
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        response = await fetch(url, {
+          method: method,
+          body: formData
+          // Don't set Content-Type header for FormData - browser sets it automatically with boundary
+        });
+      } else {
+        // Use JSON for no image case
+        const url = isEditing 
+          ? `https://portfolio-x0gj.onrender.com/api/books/admin/update/${editingBookId}`
+          : 'https://portfolio-x0gj.onrender.com/api/books/admin/add';
+        
+        const method = isEditing ? 'PUT' : 'POST';
+        
+        response = await fetch(url, {
+          method: method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(bookForm)
+        });
+      }
+      
       const data = await response.json();
       if (data.success) {
+        alert(`Book ${isEditing ? 'updated' : 'added'} successfully!`);
         setBookForm({
           bookId: '',
           title: '',
           description: '',
           price: '',
           imageUrl: '',
+          image: null,
           quantity: '',
           category: '',
           classLevel: '',
           author: '',
           pages: '',
-          language: 'English'
+          language: '',
+          isAvailable: true
         });
-        fetchBooks();
-        alert('Book added successfully!');
+        setEditingBookId(null);
         setView('books');
+        fetchBooks();
       } else {
-        alert('Failed to add book: ' + (data.message || 'Unknown error'));
+        alert(`Failed to ${isEditing ? 'update' : 'add'} book: ` + data.message);
       }
-    } catch (err) {
-      alert('Error adding book');
+    } catch (error) {
+      console.error(`Error ${editingBookId ? 'updating' : 'adding'} book:`, error);
+      alert(`Error ${editingBookId ? 'updating' : 'adding'} book. Please try again.`);
     }
   };
-
 
 
   // Apply filters whenever reviews or filters change
@@ -2326,6 +2423,13 @@ const AdminDashboard = () => {
                           >
                             Edit
                           </button>
+                          
+                          <button 
+                            className="btn-delete"
+                            onClick={() => deleteBook(book.bookId, book.title)}
+                          >
+                            Delete
+                          </button>
                         </div>
                       </div>
                     ))}
@@ -2471,16 +2575,27 @@ const AdminDashboard = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="imageUrl">Book Image URL:</label>
+                  <label htmlFor="image">Book Image:</label>
                   <input
-                    type="url"
-                    id="imageUrl"
-                    name="imageUrl"
-                    value={bookForm.imageUrl}
-                    onChange={handleBookChange}
-                    placeholder="https://example.com/book-cover.jpg"
+                    type="file"
+                    id="image"
+                    name="image"
+                    accept="image/*"
+                    onChange={handleBookImageUpload}
                     required
                   />
+                  {bookForm.image && (
+                    <div style={{ marginTop: '10px' }}>
+                      <img 
+                        src={URL.createObjectURL(bookForm.image)} 
+                        alt="Preview" 
+                        style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+                      />
+                      <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                        Selected: {bookForm.image.name}
+                      </p>
+                    </div>
+                  )}
                 </div>
 
                 <div className="form-group">
@@ -2502,6 +2617,234 @@ const AdminDashboard = () => {
                   </button>
                   <button type="submit" className="btn-primary">
                     Add Book
+                  </button>
+                </div>
+              </form>
+            </div>
+
+          ) : view === 'edit-book' ? (
+            <div className="add-book-form">
+              <h2>Edit Book</h2>
+              
+              <form onSubmit={handleBookSubmit}>
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="bookId">Book ID:</label>
+                    <input
+                      type="text"
+                      id="bookId"
+                      name="bookId"
+                      value={bookForm.bookId}
+                      onChange={handleBookChange}
+                      placeholder="e.g., MATH_10_CLASS"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="title">Book Title:</label>
+                    <input
+                      type="text"
+                      id="title"
+                      name="title"
+                      value={bookForm.title}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Mathematics for Class 10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="author">Author:</label>
+                    <input
+                      type="text"
+                      id="author"
+                      name="author"
+                      value={bookForm.author}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Sachin Bansal"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="price">Price (₹):</label>
+                    <input
+                      type="number"
+                      id="price"
+                      name="price"
+                      value={bookForm.price}
+                      onChange={handleBookChange}
+                      placeholder="e.g., 499"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="category">Category:</label>
+                    <input
+                      type="text"
+                      id="category"
+                      name="category"
+                      value={bookForm.category}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Mathematics"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="classLevel">Class Level:</label>
+                    <input
+                      type="text"
+                      id="classLevel"
+                      name="classLevel"
+                      value={bookForm.classLevel}
+                      onChange={handleBookChange}
+                      placeholder="e.g., Class 10"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="quantity">Quantity:</label>
+                    <input
+                      type="number"
+                      id="quantity"
+                      name="quantity"
+                      value={bookForm.quantity}
+                      onChange={handleBookChange}
+                      placeholder="e.g., 100"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="pages">Pages:</label>
+                    <input
+                      type="number"
+                      id="pages"
+                      name="pages"
+                      value={bookForm.pages}
+                      onChange={handleBookChange}
+                      placeholder="e.g., 200"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label htmlFor="language">Language:</label>
+                    <input
+                      type="text"
+                      id="language"
+                      name="language"
+                      value={bookForm.language}
+                      onChange={handleBookChange}
+                      placeholder="e.g., English"
+                      required
+                    />
+                  </div>
+                  
+                  <div className="form-group">
+                    <label htmlFor="image">Book Image:</label>
+                    <input
+                      type="file"
+                      id="image"
+                      name="image"
+                      accept="image/*"
+                      onChange={handleBookImageUpload}
+                    />
+                    {bookForm.imageUrl && !bookForm.image && (
+                      <div style={{ marginTop: '10px' }}>
+                        <p style={{ fontSize: '0.8rem', color: '#666' }}>
+                          Current image: {bookForm.imageUrl}
+                        </p>
+                        <img 
+                          src={bookForm.imageUrl} 
+                          alt="Current" 
+                          style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+                        />
+                      </div>
+                    )}
+                    {bookForm.image && (
+                      <div style={{ marginTop: '10px' }}>
+                        <img 
+                          src={URL.createObjectURL(bookForm.image)} 
+                          alt="Preview" 
+                          style={{ maxWidth: '100px', maxHeight: '100px', objectFit: 'cover' }}
+                        />
+                        <p style={{ fontSize: '0.8rem', color: '#666', marginTop: '5px' }}>
+                          New image: {bookForm.image.name}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group full-width">
+                    <label htmlFor="description">Description:</label>
+                    <textarea
+                      id="description"
+                      name="description"
+                      value={bookForm.description}
+                      onChange={handleBookChange}
+                      placeholder="Enter book description..."
+                      rows="4"
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="form-row">
+                  <div className="form-group">
+                    <label>
+                      <input
+                        type="checkbox"
+                        name="isAvailable"
+                        checked={bookForm.isAvailable}
+                        onChange={(e) => setBookForm(prev => ({...prev, isAvailable: e.target.checked}))}
+                      />
+                      Available for Purchase
+                    </label>
+                  </div>
+                </div>
+
+                <div className="form-actions">
+                  <button 
+                    type="button" 
+                    className="btn-secondary"
+                    onClick={() => {
+                      setBookForm({
+                        bookId: '',
+                        title: '',
+                        description: '',
+                        price: '',
+                        imageUrl: '',
+                        quantity: '',
+                        category: '',
+                        classLevel: '',
+                        author: '',
+                        pages: '',
+                        language: '',
+                        isAvailable: true
+                      });
+                      setEditingBookId(null);
+                      setView('books');
+                    }}
+                  >
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary">
+                    Update Book
                   </button>
                 </div>
               </form>
