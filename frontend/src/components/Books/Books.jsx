@@ -2,61 +2,6 @@ import React, { useState, useEffect, useRef } from "react";
 import PaymentForm from "../PaymentForm/PaymentForm";
 import "./Books.css";
 
-/* ── Main Component ── */
-const Books = () => {
-  const [books, setBooks] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [selectedBook, setSelectedBook] = useState(null);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [lightbox, setLightbox] = useState({ book: null, slideIndex: 0 });
-  const [expandedDesc, setExpandedDesc] = useState({});
-  const [bookmarks, setBookmarks] = useState({});
-  const [paymentLoading, setPaymentLoading] = useState(null);
-
-  // Fetch available books from API
-  useEffect(() => {
-    const fetchBooks = async () => {
-      try {
-        setLoading(true);
-        const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/available');
-        const data = await response.json();
-        
-        if (data.success) {
-          // Transform API data to match component structure
-          const transformedBooks = data.books.map((book, index) => ({
-            id: book.bookId,
-            cardClass: `card-${book.category.toLowerCase().replace(/\s+/g, '-')}`,
-            badge: `${book.classLevel} · ${book.category}`,
-            title: book.title,
-            price: book.price,
-            stars: 5,
-            description: book.description,
-            images: [book.imageUrl, book.imageUrl], // Use same image for front/back
-            fallbackEmojis: ["�", "�"],
-            fallbackClasses: ["cover-default-a", "cover-default-b"],
-            bookId: book.bookId,
-            author: book.author,
-            category: book.category,
-            classLevel: book.classLevel,
-            pages: book.pages,
-            language: book.language
-          }));
-          setBooks(transformedBooks);
-        } else {
-          setError('Failed to load books');
-        }
-      } catch (err) {
-        console.error('Error fetching books:', err);
-        setError('Error loading books');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchBooks();
-  }, []);
-
 /* ── Image Carousel ── */
 const ImageCarousel = ({ book, onImageClick }) => {
   const [current, setCurrent] = useState(0);
@@ -228,12 +173,58 @@ const Lightbox = ({ book, slideIndex, onClose, onBuyNow }) => {
 
 /* ── Main Component ── */
 const Books = () => {
-  const [loading, setLoading] = useState(null);
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
   const [selectedBook, setSelectedBook] = useState(null);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [lightbox, setLightbox] = useState({ book: null, slideIndex: 0 });
   const [expandedDesc, setExpandedDesc] = useState({});
   const [bookmarks, setBookmarks] = useState({});
+  const [paymentLoading, setPaymentLoading] = useState(null);
+
+  // Fetch available books from API
+  useEffect(() => {
+    const fetchBooks = async () => {
+      try {
+        setLoading(true);
+        const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/available');
+        const data = await response.json();
+        
+        if (data.success) {
+          // Transform API data to match component structure
+          const transformedBooks = data.books.map((book, index) => ({
+            id: book.bookId,
+            cardClass: `card-${book.category.toLowerCase().replace(/\s+/g, '-')}`,
+            badge: `${book.classLevel} · ${book.category}`,
+            title: book.title,
+            price: book.price,
+            stars: 5,
+            description: book.description,
+            images: [book.imageUrl, book.imageUrl], // Use same image for front/back
+            fallbackEmojis: ["📘", "📖"],
+            fallbackClasses: ["cover-default-a", "cover-default-b"],
+            bookId: book.bookId,
+            author: book.author,
+            category: book.category,
+            classLevel: book.classLevel,
+            pages: book.pages,
+            language: book.language
+          }));
+          setBooks(transformedBooks);
+        } else {
+          setError('Failed to load books');
+        }
+      } catch (err) {
+        console.error('Error fetching books:', err);
+        setError('Error loading books');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchBooks();
+  }, []);
 
   const handleBuyNow = (book) => {
     setSelectedBook(book);
@@ -278,7 +269,7 @@ const Books = () => {
         description: `Pay ₹${selectedBook.price} for ${selectedBook.title}`,
         order_id: orderData.order_id,
         prefill: { name: cleanFormData.name, email: cleanFormData.email, contact: cleanFormData.mobile },
-        notes: { book_id: selectedBook.id, book_title: selectedBook.title, customer_name: cleanFormData.name, customer_email: cleanFormData.email },
+        notes: { book_id: selectedBook.bookId, book_title: selectedBook.title, customer_name: cleanFormData.name, customer_email: cleanFormData.email },
         handler: async function (response) {
           paymentCompleted = true;
           try {
