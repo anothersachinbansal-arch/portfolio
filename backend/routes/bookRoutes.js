@@ -351,48 +351,6 @@ router.put("/admin/toggle-availability/:bookId", async (req, res) => {
       error: error.message
     });
   }
-    // Update allowed fields
-    const allowedFields = ['title', 'description', 'price', 'imageUrl', 'quantity', 'category', 'classLevel', 'author', 'pages', 'language'];
-    
-    for (const field of allowedFields) {
-      if (updateData[field] !== undefined) {
-        if (field === 'price' || field === 'quantity' || field === 'pages') {
-          book[field] = Number(updateData[field]);
-        } else {
-          book[field] = updateData[field].trim();
-        }
-      }
-    }
-
-    await book.save();
-
-    res.json({
-      success: true,
-      message: "Book updated successfully",
-      book: {
-        id: book._id,
-        bookId: book.bookId,
-        title: book.title,
-        description: book.description,
-        price: book.price,
-        imageUrl: book.imageUrl,
-        quantity: book.quantity,
-        isAvailable: book.isAvailable,
-        category: book.category,
-        classLevel: book.classLevel,
-        author: book.author,
-        pages: book.pages,
-        language: book.language
-      }
-    });
-  } catch (error) {
-    console.error("Error updating book:", error);
-    res.status(500).json({
-      success: false,
-      message: "Failed to update book",
-      error: error.message
-    });
-  }
 });
 
 // ===============================
