@@ -305,21 +305,17 @@ const AdminDashboard = () => {
   // Mark Order as Delivered
   const markAsDelivered = async (paymentId) => {
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/mark-delivered/${paymentId}`, {
-        method: 'PUT',
-        headers: getAdminHeaders()
-      });
-      const data = await response.json();
+      const data = await adminAPI.markDelivered(paymentId);
       if (data.success) {
         setOrders(orders.map(order => 
           order.id === paymentId ? { ...order, delivered: true, deliveredAt: data.deliveredAt } : order
         ));
-        alert('Order marked as delivered!');
       } else {
         alert('Failed to mark as delivered');
       }
-    } catch (err) {
-      alert('Error marking as delivered');
+    } catch (error) {
+      console.error('Error marking as delivered:', error);
+      alert(error.message || 'Error marking as delivered');
     }
   };
 
@@ -331,17 +327,7 @@ const AdminDashboard = () => {
     }
     
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/add-note/${paymentId}`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          text: newNote.trim()
-        })
-      });
-      
-      const data = await response.json();
+      const data = await adminAPI.addAdminNote(paymentId, newNote.trim());
       
       if (data.success) {
         // Update local state with the new note
@@ -363,18 +349,14 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error adding note:', error);
-      alert('Error adding note');
+      alert(error.message || 'Error adding note');
     }
   };
 
   // Delete Note
   const deleteNote = async (paymentId, noteId) => {
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/admin/delete-note/${paymentId}/${noteId}`, {
-        method: 'DELETE'
-      });
-      
-      const data = await response.json();
+      const data = await adminAPI.deleteAdminNote(paymentId, noteId);
       
       if (data.success) {
         // Update local state to remove the note
@@ -392,7 +374,7 @@ const AdminDashboard = () => {
       }
     } catch (error) {
       console.error('Error deleting note:', error);
-      alert('Error deleting note');
+      alert(error.message || 'Error deleting note');
     }
   };
 
@@ -412,19 +394,14 @@ const AdminDashboard = () => {
   // Book Management Functions
   const updateBookQuantity = async (bookId, action, quantity) => {
     try {
-      const response = await fetch(`https://portfolio-x0gj.onrender.com/api/books/admin/update-quantity/${bookId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, quantity })
-      });
-      const data = await response.json();
+      const data = await adminAPI.updateQuantity(bookId, quantity);
       if (data.success) {
         fetchBooks(); // Refresh books list
       } else {
         alert('Failed to update book quantity');
       }
     } catch (err) {
-      alert('Error updating book quantity');
+      alert(err.message || 'Error updating book quantity');
     }
   };
 
@@ -2606,23 +2583,6 @@ const AdminDashboard = () => {
                         </div>
 
                         <div className="book-actions">
-                          <div className="quantity-controls">
-                            <label>Quantity:</label>
-                            <div className="quantity-buttons">
-                              <button 
-                                onClick={() => updateBookQuantity(book.bookId, 'subtract', 1)}
-                                disabled={book.quantity <= 0}
-                              >
-                                -
-                              </button>
-                              <span>{book.quantity}</span>
-                              <button 
-                                onClick={() => updateBookQuantity(book.bookId, 'add', 1)}
-                              >
-                                +
-                              </button>
-                            </div>
-                          </div>
                           
                           <button 
                             className="btn-primary"

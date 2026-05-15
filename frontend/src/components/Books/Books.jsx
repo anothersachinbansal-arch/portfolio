@@ -189,7 +189,7 @@ const Books = () => {
     const fetchBooks = async () => {
       try {
         setLoading(true);
-        const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/available');
+        const response = await fetch('https://portfolio-x0gj.onrender.com/api/books/all');
         const data = await response.json();
         
         if (data.success) {
@@ -211,7 +211,8 @@ const Books = () => {
             classLevel: book.classLevel,
             pages: book.pages,
             language: book.language,
-            isAvailable: book.isAvailable !== undefined ? book.isAvailable : true
+            isAvailable: book.isAvailable !== undefined ? book.isAvailable : true,
+            quantity: book.quantity || 0
           }));
           setBooks(transformedBooks);
         } else {
@@ -382,58 +383,66 @@ const Books = () => {
               </div>
             ) : (
               <div className="cards-grid">
-                {books.map((book, bi) => (
-                  <div key={book.id} data-book-id={book.id} className={`book-card ${book.cardClass} ${expandedDesc[bi] ? 'expanded' : ''}`}>
+                {books.map((book, bi) => {
+                  const isOutOfStock = !book.isAvailable || book.quantity === 0;
+                  return (
+                    <div key={book.id} data-book-id={book.id} className={`book-card ${book.cardClass} ${expandedDesc[bi] ? 'expanded' : ''} ${isOutOfStock ? 'out-of-stock' : ''}`}>
 
-                    {/* Image Carousel */}
-                    <ImageCarousel
-                      book={book}
-                      onImageClick={(si) => setLightbox({ book, slideIndex: si })}
-                    />
+                      {/* Out of Stock Badge */}
+                      {isOutOfStock && (
+                        <div className="out-of-stock-badge">Out of Stock</div>
+                      )}
 
-                    {/* Content */}
-                    <div className="card-content">
-                      <span className="badge">{book.badge}</span>
-                      <h3 className="book-title">{book.title}</h3>
-                      <p className="book-author">By {book.author}</p>
-                      <div className="stars">{"★".repeat(book.stars)}{"☆".repeat(5 - book.stars)}</div>
+                      {/* Image Carousel */}
+                      <ImageCarousel
+                        book={book}
+                        onImageClick={(si) => setLightbox({ book, slideIndex: si })}
+                      />
 
-                      <p className={`book-desc ${expandedDesc[bi] ? "expanded" : ""}`}>
-                        {book.description}
-                      </p>
-                      <button
-                        className="view-more"
-                        onClick={() => setExpandedDesc((prev) => ({ ...prev, [bi]: !prev[bi] }))}
-                      >
-                        {expandedDesc[bi] ? "View less" : "View more"}
-                      </button>
+                      {/* Content */}
+                      <div className="card-content">
+                        <span className="badge">{book.badge}</span>
+                        <h3 className="book-title">{book.title}</h3>
+                        <p className="book-author">By {book.author}</p>
+                        <div className="stars">{"★".repeat(book.stars)}{"☆".repeat(5 - book.stars)}</div>
 
-                      <div className="card-footer">
-                        <div className="price-block">
-                          <span className="price-label">Price</span>
-                          <span className="price-value">₹{book.price}</span>
-                        </div>
+                        <p className={`book-desc ${expandedDesc[bi] ? "expanded" : ""}`}>
+                          {book.description}
+                        </p>
                         <button
-                          className="buy-btn"
-                          onClick={() => handleBuyNow(book)}
-                          disabled={paymentLoading !== null || !book.isAvailable}
+                          className="view-more"
+                          onClick={() => setExpandedDesc((prev) => ({ ...prev, [bi]: !prev[bi] }))}
                         >
-                          {paymentLoading === book.id ? "Processing..." : 
-                           paymentLoading !== null ? "Please wait..." : 
-                           !book.isAvailable ? "Not Available" : "Buy Now"}
+                          {expandedDesc[bi] ? "View less" : "View more"}
                         </button>
-                      </div>
-                    </div>
 
-                    {/* Bookmark */}
-                    <button
-                      className={`bookmark-btn ${bookmarks[bi] ? "saved" : ""}`}
-                      onClick={() => setBookmarks((prev) => ({ ...prev, [bi]: !prev[bi] }))}
-                    >
-                      🔖
-                    </button>
-                  </div>
-                ))}
+                        <div className="card-footer">
+                          <div className="price-block">
+                            <span className="price-label">Price</span>
+                            <span className="price-value">₹{book.price}</span>
+                          </div>
+                          <button
+                            className="buy-btn"
+                            onClick={() => !isOutOfStock && handleBuyNow(book)}
+                            disabled={paymentLoading !== null || isOutOfStock}
+                          >
+                            {paymentLoading === book.id ? "Processing..." : 
+                             paymentLoading !== null ? "Please wait..." : 
+                             isOutOfStock ? "Out of Stock" : "Buy Now"}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Bookmark */}
+                      <button
+                        className={`bookmark-btn ${bookmarks[bi] ? "saved" : ""}`}
+                        onClick={() => setBookmarks((prev) => ({ ...prev, [bi]: !prev[bi] }))}
+                      >
+                        🔖
+                      </button>
+                    </div>
+                  );
+                })}
               </div>
             )}
           </>

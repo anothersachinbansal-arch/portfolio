@@ -126,6 +126,35 @@
   height: auto;
 }
 
+/* Out of Stock State */
+.book-card.out-of-stock {
+  opacity: 0.7;
+  pointer-events: auto;
+}
+.book-card.out-of-stock:hover {
+  transform: none;
+  box-shadow: 0 4px 24px rgba(0,0,0,0.07), 0 1px 4px rgba(0,0,0,0.05);
+}
+.book-card.out-of-stock .buy-btn {
+  background-color: #95a5a6;
+  cursor: not-allowed;
+}
+.out-of-stock-badge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: #e74c3c;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  z-index: 10;
+  box-shadow: 0 2px 8px rgba(231, 76, 60, 0.3);
+}
+
 /* Left colour stripe */
 .book-card::before {
   content: '';
