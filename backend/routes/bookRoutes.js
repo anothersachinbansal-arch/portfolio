@@ -417,7 +417,7 @@ router.delete("/admin/delete/:bookId", adminAuth, async (req, res) => {
 // ===============================
 // Decrease Book Quantity (Internal Use)
 // ===============================
-router.post("/internal/decrease-quantity/:bookId", adminAuth, async (req, res) => {
+router.post("/internal/decrease-quantity/:bookId", async (req, res) => {
   try {
     const { bookId } = req.params;
     const { quantity = 1 } = req.body;
