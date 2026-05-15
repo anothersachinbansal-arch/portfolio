@@ -82,6 +82,29 @@ router.get("/available", async (req, res) => {
 });
 
 // ===============================
+// Get All Books (For Frontend - including out of stock)
+// ===============================
+router.get("/all", async (req, res) => {
+  try {
+    console.log("🔍 Fetching all books...");
+    const books = await Book.find().sort({ createdAt: -1 });
+    console.log(`📚 Found ${books.length} total books`);
+    
+    res.json({
+      success: true,
+      books: books
+    });
+  } catch (error) {
+    console.error("Error fetching all books:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch all books",
+      error: error.message
+    });
+  }
+});
+
+// ===============================
 // Add New Book (Admin)
 // ===============================
 router.post("/admin/add", adminAuth, upload.array('images', 2), async (req, res) => {
