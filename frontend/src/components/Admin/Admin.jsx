@@ -670,7 +670,10 @@ const AdminDashboard = () => {
 
     try {
 
-      await axios.delete(`https://portfolio-x0gj.onrender.com/api/achievers/${id}`);
+      const token = localStorage.getItem('adminToken');
+      await axios.delete(`https://portfolio-x0gj.onrender.com/api/achievers/${id}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
 
       setAchievers((prev) => prev.filter((a) => a._id !== id));
 
@@ -698,9 +701,10 @@ const AdminDashboard = () => {
 
     try {
 
+      const token = localStorage.getItem('adminToken');
       const res = await axios.patch(`https://portfolio-x0gj.onrender.com/api/achievers/${id}`, fd, {
 
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` },
 
       });
 
@@ -950,9 +954,10 @@ const AdminDashboard = () => {
 
 
 
+      const token = localStorage.getItem('adminToken');
       await axios.post('https://portfolio-x0gj.onrender.com/api/achievers', formData, {
 
-        headers: { 'Content-Type': 'multipart/form-data' },
+        headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` },
 
         withCredentials: false
 
