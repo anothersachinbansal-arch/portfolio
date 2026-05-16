@@ -704,7 +704,7 @@ const AdminDashboard = () => {
       const token = localStorage.getItem('adminToken');
       const res = await axios.patch(`https://portfolio-x0gj.onrender.com/api/achievers/${id}`, fd, {
 
-        headers: { 'Content-Type': 'multipart/form-data', 'Authorization': `Bearer ${token}` },
+        headers: { 'Authorization': `Bearer ${token}` },
 
       });
 

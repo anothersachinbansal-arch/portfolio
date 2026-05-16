@@ -65,6 +65,9 @@ export const listAchievers = async (req, res) => {
 export const deleteAchiever = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id.match(/^[a-fA-F0-9]{24}$/)) {
+      return res.status(400).json({ message: "Invalid achiever ID" });
+    }
     const doc = await Achiever.findById(id);
     if (!doc) return res.status(404).json({ message: "Not found" });
 
@@ -84,6 +87,9 @@ export const deleteAchiever = async (req, res) => {
 export const updateAchiever = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id.match(/^[a-fA-F0-9]{24}$/)) {
+      return res.status(400).json({ message: "Invalid achiever ID" });
+    }
     const { name, score, course, year, isFeatured, order } = req.body;
 
     const doc = await Achiever.findById(id);
