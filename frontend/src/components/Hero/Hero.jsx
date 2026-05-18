@@ -7,7 +7,7 @@ const slides = [
   { title: "With My SOL Updates Team", img: "4th.png", alt: "Slide 3" },
   { title: "With Political Science DEPT. Of HINDU College, DU", img: "5th.png", alt: "Slide 4" },
   { title: "With Political Science DEPT. Of BHASKARACHARYA College, DU Of Applied Sciences", img: "6th.png", alt: "Slide 5" },
-  { title: "With The Principle Of SHIVAJI College, DU", img: "7th.png", alt: "Slide 6" },
+  { title: "With The Principal Of SHIVAJI College, DU", img: "7th.png", alt: "Slide 6" },
   { title: "Books In This Series", img: "1st.png", alt: "Slide 7" },
   { title: "ECHOES Of History : OLD VS NEW", img: "8th.png", alt: "Slide 8" }
 ];
