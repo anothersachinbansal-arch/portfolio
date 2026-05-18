@@ -3,7 +3,7 @@ import "./Hero.css";
 
 const slides = [
   { title: "With Shri OM Birla , Hon'ble Speaker Of Loksabha", img: "2nd.png", alt: "Slide 1" },
-  { title: "With Ms. Mukti Sanyal, Principle Of Bharti College, DU", img: "3rd.png", alt: "Slide 2" },
+  { title: "With Ms. Mukti Sanyal, Principal Of Bharti College, DU", img: "3rd.png", alt: "Slide 2" },
   { title: "With My SOL Updates Team", img: "4th.png", alt: "Slide 3" },
   { title: "With Political Science DEPT. Of HINDU College, DU", img: "5th.png", alt: "Slide 4" },
   { title: "With Political Science DEPT. Of BHASKARACHARYA College, DU Of Applied Sciences", img: "6th.png", alt: "Slide 5" },
