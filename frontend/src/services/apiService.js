@@ -181,15 +181,14 @@ export const adminAPI = {
 
   addAdminNote: async (paymentId, note) => {
     return await apiRequest(`/admin/add-note/${paymentId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ note }),
+      method: 'POST',
+      body: JSON.stringify({ text: note }),
     });
   },
 
-  deleteAdminNote: async (paymentId, noteIndex) => {
-    return await apiRequest(`/admin/delete-note/${paymentId}`, {
-      method: 'PUT',
-      body: JSON.stringify({ noteIndex }),
+  deleteAdminNote: async (paymentId, noteId) => {
+    return await apiRequest(`/admin/delete-note/${paymentId}/${noteId}`, {
+      method: 'DELETE',
     });
   },
 
